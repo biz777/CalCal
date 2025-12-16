@@ -638,7 +638,7 @@ export default function Home() {
 
         {/* Small footer text */}
         <div className="mt-8 text-center text-gray-500 text-sm pb-6">
-          <p>{language === 'fr' ? '© 2024 Calorie Tracker Pro - Tous droits réservés' : language === 'es' ? '© 2024 Calorie Tracker Pro - Todos los derechos reservados' : '© 2024 Calorie Tracker Pro - All rights reserved'}</p>
+          <p>{language === 'fr' ? `© ${new Date().getFullYear()} Calorie Tracker Pro - Tous droits réservés` : language === 'es' ? `© ${new Date().getFullYear()} Calorie Tracker Pro - Todos los derechos reservados` : `© ${new Date().getFullYear()} Calorie Tracker Pro - All rights reserved`}</p>
         </div>
       </div>
     </div>
