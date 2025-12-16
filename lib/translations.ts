@@ -64,6 +64,10 @@ interface Translations {
   addPhoto: string
   takePhoto: string
   uploadPhoto: string
+  invalidAge: string
+  invalidWeight: string
+  invalidHeight: string
+  saveError: string
 }
 
 const translations: Record<Language, Translations> = {
@@ -130,8 +134,11 @@ const translations: Record<Language, Translations> = {
     startTrackingToSee: 'Start tracking your meals to see your progress',
     addPhoto: 'Photo added',
     takePhoto: 'Drop photo here',
-    uploadPhoto: 'Click or drag to add photo'
-  },
+    uploadPhoto: 'Click or drag to add photo', 
+    invalidAge: "Age must be between 1 and 120 years",
+    invalidWeight: "Weight must be greater than 0",
+    invalidHeight: "Height must be greater than 0",
+    saveError: "Error saving data"},
   fr: {
     title: 'Calorie Tracker Pro',
     subtitle: 'Suivez vos macros et atteignez vos objectifs',
@@ -195,8 +202,11 @@ const translations: Record<Language, Translations> = {
     startTrackingToSee: 'Commencez à suivre vos repas pour voir vos progrès',
     addPhoto: 'Photo ajoutée',
     takePhoto: 'Déposez la photo ici',
-    uploadPhoto: 'Cliquez ou glissez pour ajouter une photo'
-  },
+    uploadPhoto: 'Cliquez ou glissez pour ajouter une photo',
+    invalidAge: "L'âge doit être entre 1 et 120 ans",
+    invalidWeight: "Le poids doit être supérieur à 0",
+    invalidHeight: "La taille doit être supérieure à 0",
+    saveError: "Erreur lors de la sauvegarde des données",},
   es: {
     title: 'Calorie Tracker Pro',
     subtitle: 'Rastrea tus macros y alcanza tus metas',
@@ -260,8 +270,19 @@ const translations: Record<Language, Translations> = {
     startTrackingToSee: 'Comienza a rastrear tus comidas para ver tu progreso',
     addPhoto: 'Foto agregada',
     takePhoto: 'Suelta la foto aquí',
-    uploadPhoto: 'Haz clic o arrastra para agregar foto'
-  }
+    uploadPhoto: 'Haz clic o arrastra para agregar foto',
+    invalidAge: "La edad debe estar entre 1 y 120 años",
+    invalidWeight: "El peso debe ser mayor que 0",
+    invalidHeight: "La altura debe ser mayor que 0",
+    saveError: "Error al guardar los datos"
+}
+```
+
+---
+
+## Si vous avez fermé le Bloc-notes :
+```
+notepad lib\translations.ts}
 }
 
 export function useTranslation(language: Language): Translations {

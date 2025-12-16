@@ -74,7 +74,22 @@ export default function Home() {
     const savedDate = localStorage.getItem('mealsDate')
     const savedHistory = localStorage.getItem('weekHistory')
     const hasSeenGuide = localStorage.getItem('hasSeenGuide')
-    const today = new Date().toDateString()
+    const today = new Date().toISOString().split('T')[0]  // Format YYYY-MM-DD
+```
+
+---
+
+### 2. Sauvegardez (Ctrl + S)
+
+### 3. Fermez le Bloc-notes
+
+---
+
+## Ensuite, passons aux translations :
+
+**Tapez :**
+```
+notepad lib\translations.ts
     
     if (savedLanguage) {
       setLanguage(savedLanguage as Language)
@@ -101,7 +116,22 @@ export default function Home() {
 
   useEffect(() => {
     if (meals.length > 0) {
-      const today = new Date().toDateString()
+      const today = new Date().toISOString().split('T')[0]  // Format YYYY-MM-DD
+```
+
+---
+
+### 2. Sauvegardez (Ctrl + S)
+
+### 3. Fermez le Bloc-notes
+
+---
+
+## Ensuite, passons aux translations :
+
+**Tapez :**
+```
+notepad lib\translations.ts
       localStorage.setItem('todayMeals', JSON.stringify(meals))
       localStorage.setItem('mealsDate', today)
       
