@@ -139,7 +139,7 @@ const foodTranslations: (Omit<Food, 'name' | 'category' | 'unit'> & FoodTranslat
   { name: { en: "Honey", fr: "Miel", es: "Miel" }, category: { en: "Breakfast & Snacks", fr: "Petit déjeuner, Goûter", es: "Desayuno y Merienda" }, calories: 304, protein: 0.3, carbs: 82, fat: 0 },
   { name: { en: "Nutella", fr: "Nutella", es: "Nutella" }, category: { en: "Breakfast & Snacks", fr: "Petit déjeuner, Goûter", es: "Desayuno y Merienda" }, calories: 539, protein: 6.3, carbs: 57, fat: 31 },
   { name: { en: "Granola bar", fr: "Barre de céréales", es: "Barra de cereales" }, category: { en: "Breakfast & Snacks", fr: "Petit déjeuner, Goûter", es: "Desayuno y Merienda" }, calories: 471, protein: 6.9, carbs: 65, fat: 20, unit: { en: "1 bar ≈ 25g", fr: "1 barre ≈ 25g", es: "1 barra ≈ 25g" } },
-,
+
   // ============= ADDITIONAL MEAT & EGGS =============
   { name: { en: "Chicken (wings)", fr: "Poulet (ailes)", es: "Pollo (alitas)" }, category: { en: "Meat & Eggs", fr: "Viandes & Œufs", es: "Carnes y Huevos" }, calories: 203, protein: 30, carbs: 0, fat: 8.1 },
   { name: { en: "Turkey (ground)", fr: "Dinde (hachée)", es: "Pavo (molido)" }, category: { en: "Meat & Eggs", fr: "Viandes & Œufs", es: "Carnes y Huevos" }, calories: 149, protein: 20, carbs: 0, fat: 7 },
