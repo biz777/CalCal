@@ -122,7 +122,7 @@ export default function Home() {
       setHistoryData(updatedHistory)
       localStorage.setItem('weekHistory', JSON.stringify(updatedHistory))
     }
-  }, [meals])
+  }, [meals, historyData])
 
   const calculateTotals = (mealsList: Meal[]) => {
     return mealsList.reduce((acc, meal) => {
@@ -207,14 +207,32 @@ export default function Home() {
     setMeals(meals.filter(m => m.id !== id))
   }
 
-  const saveProfile = () => {
-    localStorage.setItem('userProfile', JSON.stringify(profile))
-    setHasProfile(true)
-    setShowProfile(false)
-    localStorage.setItem('hasSeenGuide', 'true')
-    setShowGuide(true)
-  }
+const saveProfile = () => {
+    // Validation
+    if (profile.age < 1 || profile.age > 150) {
+      alert('Please enter a valid age between 1 and 150')
+      return
+    }
+    if (profile.weight < 20 || profile.weight > 500) {
+      alert('Please enter a valid weight between 20 and 500 kg')
+      return
+    }
+    if (profile.height < 50 || profile.height > 300) {
+      alert('Please enter a valid height between 50 and 300 cm')
+      return
+    }
 
+    try {
+      localStorage.setItem('userProfile', JSON.stringify(profile))
+      setHasProfile(true)
+      setShowProfile(false)
+      localStorage.setItem('hasSeenGuide', 'true')
+      setShowGuide(true)
+    } catch (error) {
+      console.error('Failed to save profile:', error)
+      alert('Failed to save profile. Please try again.')
+    }
+  }
   const filteredFoods = useMemo(() => {
     return foodDatabase.filter(food => {
       const matchesCategory = selectedCategory === 'all' || food.category === selectedCategory
@@ -312,11 +330,11 @@ export default function Home() {
                 </div>
                 <div>
                   <Label className="text-base font-semibold">{t.weight}</Label>
-                  <Input type="number" value={profile.weight} onChange={(e) => setProfile({...profile, weight: parseFloat(e.target.value)})} className="mt-2 h-12 text-lg border-2" />
+                  <Input type="number" value={profile.weight} onChange={(e) => setProfile({...profile, weight: parseFloat(e.target.value)|| 0})} className="mt-2 h-12 text-lg border-2" />
                 </div>
                 <div>
                   <Label className="text-base font-semibold">{t.height}</Label>
-                  <Input type="number" value={profile.height} onChange={(e) => setProfile({...profile, height: parseFloat(e.target.value)})} className="mt-2 h-12 text-lg border-2" />
+                  <Input type="number" value={profile.height} onChange={(e) => setProfile({...profile, height: parseFloat(e.target.value)|| 0})} className="mt-2 h-12 text-lg border-2" />
                 </div>
                 <div>
                   <Label className="text-base font-semibold">{t.gender}</Label>
