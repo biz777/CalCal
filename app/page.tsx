@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import dbManager from '@/lib/indexedDB'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -39,7 +40,31 @@ interface UserProfile {
   goal: 'lose' | 'maintain' | 'gain'
 }
 
-export default function Home() {
+export default function Home() {export default function Home() {  // ← Ta ligne existante
+
+  // ========== INITIALISER LES IMAGES D'ALIMENTS ==========
+  useEffect(() => {
+    const initFoodImages = async () => {
+      try {
+        const alreadyImported = await dbManager.areTestImagesImported()
+        
+        if (!alreadyImported) {
+          console.log('🔄 Premier lancement - import des images...')
+          await dbManager.importTestImages()
+          console.log('✅ Images prêtes dans IndexedDB!')
+        } else {
+          console.log('✅ Images déjà dans IndexedDB')
+        }
+      } catch (error) {
+        console.error('❌ Erreur initialisation images:', error)
+      }
+    }
+
+    initFoodImages()
+  }, [])
+  // =======================================================
+
+  // Le reste de ton code existant continue ici...
   const [language, setLanguage] = useState<Language>('en')
   const t = useTranslation(language)
   
@@ -745,3 +770,4 @@ const saveProfile = () => {
     </div>
   )
 }
+
