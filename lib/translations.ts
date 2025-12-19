@@ -68,6 +68,23 @@ interface Translations {
   invalidWeight: string
   invalidHeight: string
   saveError: string
+  photoAdded: string
+  removePhoto: string
+  dropPhoto: string
+  profileDesc: string
+  save: string
+  en: string
+  fr: string
+  es: string
+  gotIt: string
+  guideStep1Title: string
+  guideStep1Desc: string
+  guideStep2Title: string
+  guideStep2Desc: string
+  guideStep3Title: string
+  guideStep3Desc: string
+  guideStep4Title: string
+  guideStep4Desc: string
 }
 
 const translations: Record<Language, Translations> = {
@@ -134,11 +151,29 @@ const translations: Record<Language, Translations> = {
     startTrackingToSee: 'Start tracking your meals to see your progress',
     addPhoto: 'Photo added',
     takePhoto: 'Drop photo here',
-    uploadPhoto: 'Click or drag to add photo', 
-    invalidAge: "Age must be between 1 and 120 years",
-    invalidWeight: "Weight must be greater than 0",
-    invalidHeight: "Height must be greater than 0",
-    saveError: "Error saving data"},
+    uploadPhoto: 'Click or drag to add photo',
+    invalidAge: 'Age must be between 1 and 120 years',
+    invalidWeight: 'Weight must be greater than 0',
+    invalidHeight: 'Height must be greater than 0',
+    saveError: 'Error saving data',
+    photoAdded: 'Photo added',
+    removePhoto: 'Remove photo',
+    dropPhoto: 'Drop the photo here',
+    profileDesc: 'Help us personalize your experience',
+    save: 'Save',
+    en: 'English (US)',
+    fr: 'Français',
+    es: 'Español',
+    gotIt: 'Got it!',
+    guideStep1Title: 'Personalized Goals',
+    guideStep1Desc: 'Get customized calorie and macro targets based on your profile and goals.',
+    guideStep2Title: 'Track Your Meals',
+    guideStep2Desc: 'Easily log your meals with our extensive food database and see your progress.',
+    guideStep3Title: 'Visualize Your Progress',
+    guideStep3Desc: 'See your weekly trends with beautiful charts and stay motivated.',
+    guideStep4Title: 'Add Photos',
+    guideStep4Desc: 'Capture your meals with photos to keep a visual diary of your nutrition journey.'
+  },
   fr: {
     title: 'Calorie Tracker Pro',
     subtitle: 'Suivez vos macros et atteignez vos objectifs',
@@ -204,9 +239,27 @@ const translations: Record<Language, Translations> = {
     takePhoto: 'Déposez la photo ici',
     uploadPhoto: 'Cliquez ou glissez pour ajouter une photo',
     invalidAge: "L'âge doit être entre 1 et 120 ans",
-    invalidWeight: "Le poids doit être supérieur à 0",
-    invalidHeight: "La taille doit être supérieure à 0",
-    saveError: "Erreur lors de la sauvegarde des données",},
+    invalidWeight: 'Le poids doit être supérieur à 0',
+    invalidHeight: 'La taille doit être supérieure à 0',
+    saveError: 'Erreur lors de la sauvegarde des données',
+    photoAdded: 'Photo ajoutée',
+    removePhoto: 'Retirer la photo',
+    dropPhoto: 'Déposez la photo ici',
+    profileDesc: 'Aidez-nous à personnaliser votre expérience',
+    save: 'Enregistrer',
+    en: 'English (US)',
+    fr: 'Français',
+    es: 'Español',
+    gotIt: 'Compris !',
+    guideStep1Title: 'Objectifs Personnalisés',
+    guideStep1Desc: 'Obtenez des objectifs de calories et macros personnalisés selon votre profil.',
+    guideStep2Title: 'Suivez Vos Repas',
+    guideStep2Desc: 'Enregistrez facilement vos repas avec notre base de données complète.',
+    guideStep3Title: 'Visualisez Vos Progrès',
+    guideStep3Desc: 'Consultez vos tendances hebdomadaires avec de beaux graphiques.',
+    guideStep4Title: 'Ajoutez des Photos',
+    guideStep4Desc: 'Capturez vos repas en photo pour garder un journal visuel de votre nutrition.'
+  },
   es: {
     title: 'Calorie Tracker Pro',
     subtitle: 'Rastrea tus macros y alcanza tus metas',
@@ -271,18 +324,28 @@ const translations: Record<Language, Translations> = {
     addPhoto: 'Foto agregada',
     takePhoto: 'Suelta la foto aquí',
     uploadPhoto: 'Haz clic o arrastra para agregar foto',
-    invalidAge: "La edad debe estar entre 1 y 120 años",
-    invalidWeight: "El peso debe ser mayor que 0",
-    invalidHeight: "La altura debe ser mayor que 0",
-    saveError: "Error al guardar los datos"
-}
-```
-
----
-
-## Si vous avez fermé le Bloc-notes :
-```
-notepad lib\translations.ts}
+    invalidAge: 'La edad debe estar entre 1 y 120 años',
+    invalidWeight: 'El peso debe ser mayor que 0',
+    invalidHeight: 'La altura debe ser mayor que 0',
+    saveError: 'Error al guardar los datos',
+    photoAdded: 'Foto añadida',
+    removePhoto: 'Quitar foto',
+    dropPhoto: 'Suelta la foto aquí',
+    profileDesc: 'Ayúdanos a personalizar tu experiencia',
+    save: 'Guardar',
+    en: 'English (US)',
+    fr: 'Français',
+    es: 'Español',
+    gotIt: '¡Entendido!',
+    guideStep1Title: 'Metas Personalizadas',
+    guideStep1Desc: 'Obtén objetivos de calorías y macros personalizados según tu perfil.',
+    guideStep2Title: 'Rastrea Tus Comidas',
+    guideStep2Desc: 'Registra fácilmente tus comidas con nuestra amplia base de datos.',
+    guideStep3Title: 'Visualiza Tu Progreso',
+    guideStep3Desc: 'Observa tus tendencias semanales con hermosos gráficos.',
+    guideStep4Title: 'Agrega Fotos',
+    guideStep4Desc: 'Captura tus comidas con fotos para llevar un diario visual de tu nutrición.'
+  }
 }
 
 export function useTranslation(language: Language): Translations {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,13 +11,14 @@ import { useTranslation, type Language } from '@/lib/translations'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useDropzone } from 'react-dropzone'
 import Image from 'next/image'
+import dbManager from '@/lib/indexedDB'
 
 interface Meal {
   id: string
   food: Food
   quantity: number
   time: string
-  photo?: string
+  photoId?: string  // Changed from photo?: string to photoId?: string
 }
 
 interface DayData {
@@ -57,6 +58,7 @@ export default function Home() {
   const [hasProfile, setHasProfile] = useState(false)
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null)
   const [historyData, setHistoryData] = useState<DayData[]>([])
+  const [loadedPhotos, setLoadedPhotos] = useState<Map<string, string>>(new Map())
   
   const [profile, setProfile] = useState<UserProfile>({
     age: 30,
@@ -68,70 +70,59 @@ export default function Home() {
   })
 
   useEffect(() => {
-    const savedProfile = localStorage.getItem('userProfile')
-    const savedLanguage = localStorage.getItem('language')
-    const savedMeals = localStorage.getItem('todayMeals')
-    const savedDate = localStorage.getItem('mealsDate')
-    const savedHistory = localStorage.getItem('weekHistory')
-    const hasSeenGuide = localStorage.getItem('hasSeenGuide')
-    const today = new Date().toISOString().split('T')[0]  // Format YYYY-MM-DD
-```
-
----
-
-### 2. Sauvegardez (Ctrl + S)
-
-### 3. Fermez le Bloc-notes
-
----
-
-## Ensuite, passons aux translations :
-
-**Tapez :**
-```
-notepad lib\translations.ts
-    
-    if (savedLanguage) {
-      setLanguage(savedLanguage as Language)
-    }
-    
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile))
-      setHasProfile(true)
-      if (!hasSeenGuide) {
-        setShowGuide(true)
+    const loadData = async () => {
+      const savedProfile = localStorage.getItem('userProfile')
+      const savedLanguage = localStorage.getItem('language')
+      const savedMeals = localStorage.getItem('todayMeals')
+      const savedDate = localStorage.getItem('mealsDate')
+      const savedHistory = localStorage.getItem('weekHistory')
+      const hasSeenGuide = localStorage.getItem('hasSeenGuide')
+      const today = new Date().toISOString().split('T')[0]
+      
+      if (savedLanguage) {
+        setLanguage(savedLanguage as Language)
       }
-    } else {
-      setShowProfile(true)
+      
+      if (savedProfile) {
+        setProfile(JSON.parse(savedProfile))
+        setHasProfile(true)
+        if (!hasSeenGuide) {
+          setShowGuide(true)
+        }
+      } else {
+        setShowProfile(true)
+      }
+      
+      if (savedMeals && savedDate === today) {
+        const parsedMeals: Meal[] = JSON.parse(savedMeals)
+        setMeals(parsedMeals)
+        
+        // Charger les photos depuis IndexedDB
+        const photoIds = parsedMeals
+          .filter(meal => meal.photoId)
+          .map(meal => meal.photoId!)
+        
+        if (photoIds.length > 0) {
+          try {
+            const photos = await dbManager.getPhotos(photoIds)
+            setLoadedPhotos(photos)
+          } catch (error) {
+            console.error('Error loading photos from IndexedDB:', error)
+          }
+        }
+      }
+      
+      if (savedHistory) {
+        setHistoryData(JSON.parse(savedHistory))
+      }
     }
     
-    if (savedMeals && savedDate === today) {
-      setMeals(JSON.parse(savedMeals))
-    }
-    
-    if (savedHistory) {
-      setHistoryData(JSON.parse(savedHistory))
-    }
+    loadData()
   }, [])
 
   useEffect(() => {
     if (meals.length > 0) {
-      const today = new Date().toISOString().split('T')[0]  // Format YYYY-MM-DD
-```
-
----
-
-### 2. Sauvegardez (Ctrl + S)
-
-### 3. Fermez le Bloc-notes
-
----
-
-## Ensuite, passons aux translations :
-
-**Tapez :**
-```
-notepad lib\translations.ts
+      const today = new Date().toISOString().split('T')[0]
       localStorage.setItem('todayMeals', JSON.stringify(meals))
       localStorage.setItem('mealsDate', today)
       
@@ -151,6 +142,12 @@ notepad lib\translations.ts
       
       setHistoryData(updatedHistory)
       localStorage.setItem('weekHistory', JSON.stringify(updatedHistory))
+      
+      // Nettoyer les photos orphelines
+      const validPhotoIds = meals.filter(m => m.photoId).map(m => m.photoId!)
+      dbManager.cleanupOrphanedPhotos(validPhotoIds).catch(error => {
+        console.error('Error cleaning up orphaned photos:', error)
+      })
     }
   }, [meals, historyData])
 
@@ -166,36 +163,64 @@ notepad lib\translations.ts
     }, { calories: 0, protein: 0, carbs: 0, fat: 0 })
   }
 
-  const calculateBMR = (): number => {
-    if (profile.gender === 'male') {
-      return 88.362 + (13.397 * profile.weight) + (4.799 * profile.height) - (5.677 * profile.age)
-    } else {
-      return 447.593 + (9.247 * profile.weight) + (3.098 * profile.height) - (4.330 * profile.age)
-    }
-  }
+  // Fonction pour compresser l'image
+  const compressImage = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = document.createElement('img')
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const MAX_WIDTH = 800
+          const MAX_HEIGHT = 800
+          let width = img.width
+          let height = img.height
 
-  const calculateTDEE = (): number => {
-    const bmr = calculateBMR()
-    const activityMultipliers = {
-      sedentary: 1.2,
-      light: 1.375,
-      moderate: 1.55,
-      active: 1.725,
-      very_active: 1.9
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width
+              width = MAX_WIDTH
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height
+              height = MAX_HEIGHT
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, width, height)
+          
+          // Compression en JPEG avec qualité 0.7
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7)
+          resolve(compressedDataUrl)
+        }
+        img.onerror = reject
+        img.src = e.target?.result as string
+      }
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }, [])
+
+  const calculateDailyCalories = (profile: UserProfile) => {
+    const { age, weight, height, gender, activityLevel, goal } = profile
+    let bmr
+    if (gender === 'male') {
+      bmr = 10 * weight + 6.25 * height - 5 * age + 5
+    } else {
+      bmr = 10 * weight + 6.25 * height - 5 * age - 161
     }
-    
-    let tdee = bmr * activityMultipliers[profile.activityLevel]
-    
-    if (profile.goal === 'lose') {
-      tdee -= 500
-    } else if (profile.goal === 'gain') {
-      tdee += 500
-    }
-    
+    const activityMultipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9 }
+    let tdee = bmr * activityMultipliers[activityLevel]
+    if (goal === 'lose') tdee -= 500
+    if (goal === 'gain') tdee += 500
     return Math.round(tdee)
   }
 
-  const dailyCalories = calculateTDEE()
+  const dailyCalories = calculateDailyCalories(profile)
   const recommendedMacros = {
     protein: Math.round(profile.weight * 2),
     carbs: Math.round(dailyCalories * 0.4 / 4),
@@ -216,14 +241,31 @@ notepad lib\translations.ts
     </div>
   )
 
-  const addMeal = () => {
+  const addMeal = async () => {
     if (selectedFood && quantity) {
+      const mealId = Date.now().toString()
+      let photoId: string | undefined = undefined
+      
+      // Si une photo est uploadée, la sauvegarder dans IndexedDB
+      if (uploadedPhoto) {
+        photoId = `photo_${mealId}`
+        try {
+          await dbManager.savePhoto(photoId, uploadedPhoto)
+          // Ajouter la photo au state local pour affichage immédiat
+          setLoadedPhotos(prev => new Map(prev).set(photoId!, uploadedPhoto))
+        } catch (error) {
+          console.error('Error saving photo to IndexedDB:', error)
+          alert('Erreur lors de la sauvegarde de la photo. Veuillez réessayer.')
+          return
+        }
+      }
+      
       const newMeal: Meal = {
-        id: Date.now().toString(),
+        id: mealId,
         food: selectedFood,
         quantity: parseFloat(quantity),
         time: new Date().toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' }),
-        photo: uploadedPhoto || undefined
+        photoId: photoId
       }
       setMeals([...meals, newMeal])
       setSelectedFood(null)
@@ -233,7 +275,23 @@ notepad lib\translations.ts
     }
   }
 
-  const deleteMeal = (id: string) => {
+  const deleteMeal = async (id: string) => {
+    const mealToDelete = meals.find(m => m.id === id)
+    
+    // Supprimer la photo d'IndexedDB si elle existe
+    if (mealToDelete?.photoId) {
+      try {
+        await dbManager.deletePhoto(mealToDelete.photoId)
+        setLoadedPhotos(prev => {
+          const newMap = new Map(prev)
+          newMap.delete(mealToDelete.photoId!)
+          return newMap
+        })
+      } catch (error) {
+        console.error('Error deleting photo from IndexedDB:', error)
+      }
+    }
+    
     setMeals(meals.filter(m => m.id !== id))
   }
 
@@ -256,7 +314,6 @@ const saveProfile = () => {
       localStorage.setItem('userProfile', JSON.stringify(profile))
       setHasProfile(true)
       setShowProfile(false)
-      localStorage.setItem('hasSeenGuide', 'true')
       setShowGuide(true)
     } catch (error) {
       console.error('Failed to save profile:', error)
@@ -273,16 +330,18 @@ const saveProfile = () => {
     })
   }, [foodDatabase, selectedCategory, searchQuery])
 
-  const onDrop = (acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onload = () => {
-        setUploadedPhoto(reader.result as string)
+      try {
+        const compressedImage = await compressImage(file)
+        setUploadedPhoto(compressedImage)
+      } catch (error) {
+        console.error('Error compressing image:', error)
+        alert('Erreur lors du traitement de l\'image. Veuillez réessayer.')
       }
-      reader.readAsDataURL(file)
     }
-  }
+  }, [compressImage])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -308,37 +367,37 @@ const saveProfile = () => {
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="space-y-4">
-                <div className="flex gap-4 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border-2 border-blue-200">
-                  <div className="text-3xl">🎯</div>
+                <div className="flex gap-4 items-start p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
+                  <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
                   <div>
-                    <h3 className="font-bold text-lg text-gray-900">{t.personalizedGoals}</h3>
-                    <p className="text-gray-700">{t.personalizedGoalsDesc}</p>
+                    <h4 className="font-bold text-lg text-gray-900 mb-1">{t.guideStep1Title}</h4>
+                    <p className="text-gray-700 leading-relaxed">{t.guideStep1Desc}</p>
                   </div>
                 </div>
-                <div className="flex gap-4 p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border-2 border-green-200">
-                  <div className="text-3xl">🍽️</div>
+                <div className="flex gap-4 items-start p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
+                  <div className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
                   <div>
-                    <h3 className="font-bold text-lg text-gray-900">{t.trackMeals}</h3>
-                    <p className="text-gray-700">{t.trackMealsDesc}</p>
+                    <h4 className="font-bold text-lg text-gray-900 mb-1">{t.guideStep2Title}</h4>
+                    <p className="text-gray-700 leading-relaxed">{t.guideStep2Desc}</p>
                   </div>
                 </div>
-                <div className="flex gap-4 p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border-2 border-purple-200">
-                  <div className="text-3xl">📊</div>
+                <div className="flex gap-4 items-start p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200">
+                  <div className="bg-purple-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
                   <div>
-                    <h3 className="font-bold text-lg text-gray-900">{t.visualizeProgress}</h3>
-                    <p className="text-gray-700">{t.visualizeProgressDesc}</p>
+                    <h4 className="font-bold text-lg text-gray-900 mb-1">{t.guideStep3Title}</h4>
+                    <p className="text-gray-700 leading-relaxed">{t.guideStep3Desc}</p>
                   </div>
                 </div>
-                <div className="flex gap-4 p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border-2 border-orange-200">
-                  <div className="text-3xl">📸</div>
+                <div className="flex gap-4 items-start p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border-2 border-orange-200">
+                  <div className="bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">4</div>
                   <div>
-                    <h3 className="font-bold text-lg text-gray-900">{t.addPhotos}</h3>
-                    <p className="text-gray-700">{t.addPhotosDesc}</p>
+                    <h4 className="font-bold text-lg text-gray-900 mb-1">{t.guideStep4Title}</h4>
+                    <p className="text-gray-700 leading-relaxed">{t.guideStep4Desc}</p>
                   </div>
                 </div>
               </div>
-              <Button onClick={() => setShowGuide(false)} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-lg font-semibold shadow-lg">
-                {t.getStarted}
+              <Button onClick={() => { setShowGuide(false); localStorage.setItem('hasSeenGuide', 'true') }} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-base font-semibold shadow-lg">
+                {t.gotIt}
               </Button>
             </CardContent>
           </Card>
@@ -347,53 +406,55 @@ const saveProfile = () => {
 
       {showProfile && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="max-w-2xl w-full border-2 border-indigo-300 shadow-2xl">
+          <Card className="max-w-md w-full border-2 border-indigo-300 shadow-2xl">
             <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200">
-              <CardTitle className="text-3xl text-gray-900">{t.setupProfile}</CardTitle>
-              <CardDescription className="text-base">{t.personalizeExperience}</CardDescription>
+              <CardTitle className="text-2xl text-gray-900">{t.setupProfile}</CardTitle>
+              <CardDescription className="text-base">{t.profileDesc}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 pt-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <CardContent className="space-y-4 pt-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-base font-semibold">{t.age}</Label>
-                  <Input type="number" value={profile.age} onChange={(e) => setProfile({...profile, age: parseInt(e.target.value)})} className="mt-2 h-12 text-lg border-2" />
-                </div>
-                <div>
-                  <Label className="text-base font-semibold">{t.weight}</Label>
-                  <Input type="number" value={profile.weight} onChange={(e) => setProfile({...profile, weight: parseFloat(e.target.value)|| 0})} className="mt-2 h-12 text-lg border-2" />
-                </div>
-                <div>
-                  <Label className="text-base font-semibold">{t.height}</Label>
-                  <Input type="number" value={profile.height} onChange={(e) => setProfile({...profile, height: parseFloat(e.target.value)|| 0})} className="mt-2 h-12 text-lg border-2" />
+                  <Input type="number" value={profile.age} onChange={(e) => setProfile({...profile, age: parseInt(e.target.value)})} className="mt-2 h-11 text-base border-2" />
                 </div>
                 <div>
                   <Label className="text-base font-semibold">{t.gender}</Label>
-                  <select value={profile.gender} onChange={(e) => setProfile({...profile, gender: e.target.value as 'male' | 'female'})} className="w-full mt-2 h-12 text-lg border-2 rounded-md px-3 border-gray-300 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                  <select value={profile.gender} onChange={(e) => setProfile({...profile, gender: e.target.value as 'male' | 'female'})} className="w-full mt-2 h-11 px-3 rounded-md border-2 text-base bg-white">
                     <option value="male">{t.male}</option>
                     <option value="female">{t.female}</option>
                   </select>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-base font-semibold">{t.activityLevel}</Label>
-                  <select value={profile.activityLevel} onChange={(e) => setProfile({...profile, activityLevel: e.target.value as any})} className="w-full mt-2 h-12 text-lg border-2 rounded-md px-3 border-gray-300 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
-                    <option value="sedentary">{t.sedentary}</option>
-                    <option value="light">{t.light}</option>
-                    <option value="moderate">{t.moderate}</option>
-                    <option value="active">{t.active}</option>
-                    <option value="very_active">{t.veryActive}</option>
-                  </select>
+                  <Label className="text-base font-semibold">{t.weight}</Label>
+                  <Input type="number" value={profile.weight} onChange={(e) => setProfile({...profile, weight: parseInt(e.target.value)})} className="mt-2 h-11 text-base border-2" />
                 </div>
                 <div>
-                  <Label className="text-base font-semibold">{t.goal}</Label>
-                  <select value={profile.goal} onChange={(e) => setProfile({...profile, goal: e.target.value as any})} className="w-full mt-2 h-12 text-lg border-2 rounded-md px-3 border-gray-300 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
-                    <option value="lose">{t.loseWeight}</option>
-                    <option value="maintain">{t.maintainWeight}</option>
-                    <option value="gain">{t.gainWeight}</option>
-                  </select>
+                  <Label className="text-base font-semibold">{t.height}</Label>
+                  <Input type="number" value={profile.height} onChange={(e) => setProfile({...profile, height: parseInt(e.target.value)})} className="mt-2 h-11 text-base border-2" />
                 </div>
               </div>
-              <Button onClick={saveProfile} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-lg font-semibold shadow-lg">
-                {t.saveProfile}
+              <div>
+                <Label className="text-base font-semibold">{t.activityLevel}</Label>
+                <select value={profile.activityLevel} onChange={(e) => setProfile({...profile, activityLevel: e.target.value as any})} className="w-full mt-2 h-11 px-3 rounded-md border-2 text-base bg-white">
+                  <option value="sedentary">{t.sedentary}</option>
+                  <option value="light">{t.light}</option>
+                  <option value="moderate">{t.moderate}</option>
+                  <option value="active">{t.active}</option>
+                  <option value="very_active">{t.veryActive}</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-base font-semibold">{t.goal}</Label>
+                <select value={profile.goal} onChange={(e) => setProfile({...profile, goal: e.target.value as any})} className="w-full mt-2 h-11 px-3 rounded-md border-2 text-base bg-white">
+                  <option value="lose">{t.loseWeight}</option>
+                  <option value="maintain">{t.maintainWeight}</option>
+                  <option value="gain">{t.gainWeight}</option>
+                </select>
+              </div>
+              <Button onClick={saveProfile} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-base font-semibold shadow-lg">
+                {t.save}
               </Button>
             </CardContent>
           </Card>
@@ -402,11 +463,11 @@ const saveProfile = () => {
 
       {showCharts && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="max-w-4xl w-full max-h-[90vh] overflow-y-auto border-2 border-indigo-300 shadow-2xl">
+          <Card className="max-w-4xl w-full border-2 border-indigo-300 shadow-2xl max-h-[90vh] overflow-y-auto">
             <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200 sticky top-0 z-10">
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-3xl text-gray-900">{t.weeklyProgress}</CardTitle>
+                  <CardTitle className="text-2xl text-gray-900">{t.weeklyProgress}</CardTitle>
                   <CardDescription className="text-base">{t.last7Days}</CardDescription>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => setShowCharts(false)} className="hover:bg-indigo-100">
@@ -414,119 +475,80 @@ const saveProfile = () => {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-8 pt-6">
-              {historyData.length > 0 ? (
-                <>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">{t.caloriesEvolution}</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={historyData.slice().reverse()}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
-                        <XAxis dataKey="date" tick={{fill: '#4b5563'}} tickFormatter={(date) => new Date(date).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })} />
-                        <YAxis tick={{fill: '#4b5563'}} />
-                        <Tooltip contentStyle={{backgroundColor: '#f9fafb', border: '2px solid #c7d2fe', borderRadius: '8px'}} />
-                        <Legend />
-                        <Line type="monotone" dataKey="calories" stroke="#6366f1" strokeWidth={3} name={t.calories} dot={{fill: '#6366f1', r: 5}} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">{t.macrosEvolution}</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={historyData.slice().reverse()}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
-                        <XAxis dataKey="date" tick={{fill: '#4b5563'}} tickFormatter={(date) => new Date(date).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })} />
-                        <YAxis tick={{fill: '#4b5563'}} />
-                        <Tooltip contentStyle={{backgroundColor: '#f9fafb', border: '2px solid #c7d2fe', borderRadius: '8px'}} />
-                        <Legend />
-                        <Line type="monotone" dataKey="protein" stroke="#ef4444" strokeWidth={2} name={t.protein} dot={{fill: '#ef4444', r: 4}} />
-                        <Line type="monotone" dataKey="carbs" stroke="#3b82f6" strokeWidth={2} name={t.carbs} dot={{fill: '#3b82f6', r: 4}} />
-                        <Line type="monotone" dataKey="fat" stroke="#f59e0b" strokeWidth={2} name={t.fat} dot={{fill: '#f59e0b', r: 4}} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-12">
-                  <TrendingUp className="w-20 h-20 mx-auto mb-4 text-gray-300" />
-                  <p className="text-lg font-medium text-gray-500">{t.noDataYet}</p>
-                  <p className="text-sm text-gray-400 mt-2">{t.startTrackingToSee}</p>
-                </div>
-              )}
+            <CardContent className="space-y-6 pt-6">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={historyData.slice().reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="calories" stroke="#8b5cf6" strokeWidth={2} name={t.calories} />
+                    <Line type="monotone" dataKey="protein" stroke="#ef4444" strokeWidth={2} name={t.protein} />
+                    <Line type="monotone" dataKey="carbs" stroke="#3b82f6" strokeWidth={2} name={t.carbs} />
+                    <Line type="monotone" dataKey="fat" stroke="#f59e0b" strokeWidth={2} name={t.fat} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
 
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Hero Header with Image */}
-        <div className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-indigo-300 mb-8">
-          <div className="relative h-72 md:h-96">
-            <Image 
-              src="/salad-bar.webp" 
-              alt="Fresh healthy food" 
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
-            
-            {/* Header Content Overlay */}
-            <div className="absolute inset-0 flex flex-col">
-              {/* Top Section: Language & Settings */}
-              <div className="flex justify-end gap-3 p-4 md:p-6">
-                <select value={language} onChange={(e) => { setLanguage(e.target.value as Language); localStorage.setItem('language', e.target.value) }} className="h-10 md:h-12 px-3 md:px-4 border-2 border-white/30 rounded-lg text-sm md:text-base font-semibold bg-white/95 hover:bg-white backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer shadow-lg">
-                  <option value="en">🇺🇸 English (US)</option>
-                  <option value="fr">🇫🇷 Français</option>
-                  <option value="es">🇪🇸 Español</option>
-                </select>
-                <Button onClick={() => setShowCharts(true)} variant="outline" size="icon" className="border-2 border-white/30 bg-white/95 hover:bg-white backdrop-blur-sm w-10 h-10 md:w-12 md:h-12 shadow-lg">
-                  <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
-                </Button>
-                <Button onClick={() => setShowProfile(true)} variant="outline" size="icon" className="border-2 border-white/30 bg-white/95 hover:bg-white backdrop-blur-sm w-10 h-10 md:w-12 md:h-12 shadow-lg">
-                  <User className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
-                </Button>
-                <Button onClick={() => setShowGuide(true)} variant="outline" size="icon" className="border-2 border-white/30 bg-white/95 hover:bg-white backdrop-blur-sm w-10 h-10 md:w-12 md:h-12 shadow-lg">
-                  <Info className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
-                </Button>
-              </div>
-              
-              {/* Center Section: Title */}
-              <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-3 md:mb-4 drop-shadow-2xl">
-                  {t.title}
-                </h1>
-                <p className="text-lg md:text-2xl text-white/95 font-medium drop-shadow-lg max-w-2xl">
-                  {t.subtitle}
-                </p>
-              </div>
+        <div className="flex items-center justify-between mb-8 bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-lg border-2 border-indigo-200">
+          <div className="flex items-center gap-4">
+            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-3 rounded-xl shadow-lg">
+              <UtensilsCrossed className="w-8 h-8 text-white" />
             </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">{t.title}</h1>
+              <p className="text-base text-gray-600">{t.subtitle}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex gap-2">
+              <Button variant={language === 'en' ? 'default' : 'outline'} onClick={() => { setLanguage('en'); localStorage.setItem('language', 'en') }} size="sm" className={language === 'en' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
+                🇺🇸 {t.en}
+              </Button>
+              <Button variant={language === 'fr' ? 'default' : 'outline'} onClick={() => { setLanguage('fr'); localStorage.setItem('language', 'fr') }} size="sm" className={language === 'fr' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
+                🇫🇷 {t.fr}
+              </Button>
+              <Button variant={language === 'es' ? 'default' : 'outline'} onClick={() => { setLanguage('es'); localStorage.setItem('language', 'es') }} size="sm" className={language === 'es' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
+                🇪🇸 {t.es}
+              </Button>
+            </div>
+            <Button variant="outline" size="icon" onClick={() => setShowCharts(true)} className="border-2 hover:border-indigo-400">
+              <TrendingUp className="w-5 h-5" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setShowProfile(true)} className="border-2 hover:border-indigo-400">
+              <User className="w-5 h-5" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setShowGuide(true)} className="border-2 hover:border-indigo-400">
+              <Info className="w-5 h-5" />
+            </Button>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 mb-6">
-          <Card className="border-2 border-indigo-300 shadow-xl bg-gradient-to-br from-white to-indigo-50">
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <Card className="border-2 border-indigo-300 shadow-xl bg-white">
             <CardHeader className="pb-3">
               <CardTitle className="text-2xl text-gray-800">{t.dailyCalories}</CardTitle>
               <CardDescription className="text-base font-medium">{t.target}: {dailyCalories} {t.kcal}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center mb-4">
-                <div className="text-6xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  {Math.round(totals.calories)}
+              <div className="text-center py-6">
+                <div className="text-6xl font-bold text-indigo-600">{Math.round(totals.calories)}</div>
+                <div className="text-lg text-gray-600 mt-2">{t.consumed}</div>
+                <div className="w-full bg-gray-200 rounded-full h-4 mt-4 overflow-hidden shadow-inner">
+                  <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-4 rounded-full transition-all duration-500 shadow-md" style={{ width: `${Math.min((totals.calories / dailyCalories) * 100, 100)}%` }} />
                 </div>
-                <p className="text-gray-600 text-lg font-medium mt-2">{t.consumed}</p>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
-                <div
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 h-4 rounded-full transition-all duration-500 shadow-md"
-                  style={{ width: `${Math.min((totals.calories / dailyCalories) * 100, 100)}%` }}
-                />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-indigo-300 shadow-xl bg-gradient-to-br from-white to-purple-50">
+          <Card className="border-2 border-indigo-300 shadow-xl bg-white">
             <CardHeader className="pb-3">
               <CardTitle className="text-2xl text-gray-800">{t.macronutrients}</CardTitle>
               <CardDescription className="text-base font-medium">{t.dailyDistribution}</CardDescription>
@@ -573,16 +595,30 @@ const saveProfile = () => {
               <div className="grid md:grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2">
                 {filteredFoods.map((food, index) => (
                   <div key={index} onClick={() => setSelectedFood(food)} className="p-4 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md cursor-pointer transition-all">
-                    <div className="flex justify-between items-start">
+                    <div className="flex gap-3 items-start">
+                      {food.imageUrl && (
+                        <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                          <img 
+                            src={food.imageUrl} 
+                            alt={food.name} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback si l'image ne charge pas
+                              e.currentTarget.src = `https://via.placeholder.com/64x64/e0e7ff/4f46e5?text=${encodeURIComponent(food.name.charAt(0))}`
+                            }}
+                          />
+                        </div>
+                      )}
                       <div className="flex-1">
                         <p className="font-semibold text-base text-gray-900">{food.name}</p>
                         <p className="text-xs text-gray-500 mt-1">{food.category}</p>
                         {food.unit && <p className="text-xs text-indigo-600 mt-1 font-medium">{food.unit}</p>}
                       </div>
-                      <div className="text-right text-sm ml-3">
+                      <div className="text-right text-sm">
                         <p className="font-bold text-indigo-600 text-lg">{food.calories} {t.kcal}</p>
                         <p className="text-gray-500 text-xs mt-1">P:{food.protein}{t.grams} C:{food.carbs}{t.grams} L:{food.fat}{t.grams}</p>
                       </div>
+                    </div>
                     </div>
                   </div>
                 ))}
@@ -602,12 +638,24 @@ const saveProfile = () => {
                   {uploadedPhoto ? (
                     <div className="space-y-2">
                       <img src={uploadedPhoto} alt="Preview" className="max-h-32 mx-auto rounded" />
-                      <p className="text-sm text-green-600 font-medium">✓ {t.addPhoto}</p>
+                      <p className="text-sm text-green-600 font-medium">✓ {t.photoAdded || 'Photo ajoutée'}</p>
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setUploadedPhoto(null)
+                        }}
+                        className="mt-2"
+                      >
+                        {t.removePhoto || 'Retirer la photo'}
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <Camera className="w-8 h-8 mx-auto text-gray-400" />
-                      <p className="text-sm text-gray-600">{isDragActive ? t.takePhoto : t.uploadPhoto}</p>
+                      <p className="text-sm text-gray-600">{isDragActive ? (t.dropPhoto || 'Déposez la photo ici') : (t.uploadPhoto || 'Cliquez ou déposez une photo')}</p>
                     </div>
                   )}
                 </div>
@@ -657,9 +705,14 @@ const saveProfile = () => {
               <div className="space-y-3">
                 {meals.map((meal) => {
                   const multiplier = meal.quantity / 100
+                  const photoUrl = meal.photoId ? loadedPhotos.get(meal.photoId) : undefined
                   return (
                     <div key={meal.id} className="flex items-center gap-4 p-5 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all">
-                      {meal.photo && <img src={meal.photo} alt={meal.food.name} className="w-20 h-20 object-cover rounded-lg shadow" />}
+                      {photoUrl && (
+                        <div className="relative w-20 h-20 flex-shrink-0">
+                          <img src={photoUrl} alt={meal.food.name} className="w-full h-full object-cover rounded-lg shadow" />
+                        </div>
+                      )}
                       <div className="flex-1">
                         <h3 className="font-bold text-lg text-gray-900">{meal.food.name}</h3>
                         <div className="flex gap-4 text-sm text-gray-600 mt-2 font-medium">
