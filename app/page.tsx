@@ -620,7 +620,7 @@ const saveProfile = () => {
                       </div>
                     </div>
                     </div>
-                  </div>
+
                 ))}
               </div>
             )}
