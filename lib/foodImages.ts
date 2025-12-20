@@ -31,7 +31,7 @@ export interface FoodImage {
 // Le chemin est relatif au dossier public/
 export const foodImages: Record<string, string> = {
   // ============= MEAT & EGGS =============
-  "chicken_breast_skinless": "/food-images/chicken_breast_skinless.jpg",
+  "chicken_breast_skinless": "/food-images/chicken_breast_skinless.webp",
   "chicken_thigh_with_skin": "/food-images/chicken_thigh_with_skin.jpg",
   "turkey_breast": "/food-images/turkey_breast.jpg",
   "beef_ground_5": "/food-images/beef_ground_5.jpg",
@@ -378,7 +378,7 @@ export const foodImages: Record<string, string> = {
   "fish_and_chips": "/food-images/fish_and_chips.jpg",
   "fried_chicken": "/food-images/fried_chicken.jpg",
   "grilled_chicken": "/food-images/grilled_chicken.jpg",
-  "roast_chicken": "/food-images/roast_chicken.webp",
+  "roast_chicken": "/food-images/roast_chicken.jpg",  
   "beef_stew": "/food-images/beef_stew.jpg",
   "pot_roast": "/food-images/pot_roast.jpg",
   "meatballs": "/food-images/meatballs.jpg",

@@ -1,0 +1,5 @@
+[33m3cabe48[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix: Remove duplicate imports and exports
+[33m05305ab[m Add food images initialization in IndexedDB
+[33m6df32d1[m Fix: remove extra closing div
+[33m6b3d0be[m Add food images, fix file names, and update code
+[33m2380245[m Fix: Date comparison + Add error messages in translations
