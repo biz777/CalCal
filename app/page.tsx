@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import dbManager from '@/lib/indexedDB'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -40,31 +39,7 @@ interface UserProfile {
   goal: 'lose' | 'maintain' | 'gain'
 }
 
-export default function Home() {export default function Home() {  // ← Ta ligne existante
-
-  // ========== INITIALISER LES IMAGES D'ALIMENTS ==========
-  useEffect(() => {
-    const initFoodImages = async () => {
-      try {
-        const alreadyImported = await dbManager.areTestImagesImported()
-        
-        if (!alreadyImported) {
-          console.log('🔄 Premier lancement - import des images...')
-          await dbManager.importTestImages()
-          console.log('✅ Images prêtes dans IndexedDB!')
-        } else {
-          console.log('✅ Images déjà dans IndexedDB')
-        }
-      } catch (error) {
-        console.error('❌ Erreur initialisation images:', error)
-      }
-    }
-
-    initFoodImages()
-  }, [])
-  // =======================================================
-
-  // Le reste de ton code existant continue ici...
+export default function Home() {
   const [language, setLanguage] = useState<Language>('en')
   const t = useTranslation(language)
   
@@ -320,7 +295,7 @@ export default function Home() {export default function Home() {  // ← Ta lign
     setMeals(meals.filter(m => m.id !== id))
   }
 
-const saveProfile = () => {
+  const saveProfile = () => {
     // Validation
     if (profile.age < 1 || profile.age > 150) {
       alert('Please enter a valid age between 1 and 150')
@@ -345,6 +320,7 @@ const saveProfile = () => {
       alert('Failed to save profile. Please try again.')
     }
   }
+  
   const filteredFoods = useMemo(() => {
     return foodDatabase.filter(food => {
       const matchesCategory = selectedCategory === 'all' || food.category === selectedCategory
@@ -605,16 +581,16 @@ const saveProfile = () => {
             </div>
 
             <Input 
-  placeholder={t.searchPlaceholder} 
-  value={searchQuery} 
-  onChange={(e) => {
-    setSearchQuery(e.target.value)
-    if (e.target.value.trim() !== '') {
-      setSelectedCategory('all')
-    }
-  }} 
-  className="h-12 text-base border-2 focus:border-indigo-400" 
-/>
+              placeholder={t.searchPlaceholder} 
+              value={searchQuery} 
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                if (e.target.value.trim() !== '') {
+                  setSelectedCategory('all')
+                }
+              }} 
+              className="h-12 text-base border-2 focus:border-indigo-400" 
+            />
 
             {!selectedFood && (
               <div className="grid md:grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2">
@@ -644,8 +620,7 @@ const saveProfile = () => {
                         <p className="text-gray-500 text-xs mt-1">P:{food.protein}{t.grams} C:{food.carbs}{t.grams} L:{food.fat}{t.grams}</p>
                       </div>
                     </div>
-                    </div>
-
+                  </div>
                 ))}
               </div>
             )}
@@ -762,7 +737,6 @@ const saveProfile = () => {
           </CardContent>
         </Card>
 
-        {/* Small footer text */}
         <div className="mt-8 text-center text-gray-500 text-sm pb-6">
           <p>{language === 'fr' ? `© ${new Date().getFullYear()} Calorie Tracker Pro - Tous droits réservés` : language === 'es' ? `© ${new Date().getFullYear()} Calorie Tracker Pro - Todos los derechos reservados` : `© ${new Date().getFullYear()} Calorie Tracker Pro - All rights reserved`}</p>
         </div>
@@ -770,4 +744,3 @@ const saveProfile = () => {
     </div>
   )
 }
-
