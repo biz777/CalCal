@@ -308,20 +308,70 @@ class IndexedDBManager {
     }
   }
 
-  // Importer toutes les images de test
-  async importTestImages(): Promise<void> {
-    console.log('🔄 Importing test food images...')
+  // Importer toutes les images disponibles
+async importTestImages(): Promise<void> {
+  console.log('🔄 Importing food images...')
+  
+  const imagesToImport = [
+    // MEAT & POULTRY
+    { id: 'bacon', path: '/food-images/bacon.jpg' },
+    { id: 'beef_ground_15', path: '/food-images/beef_ground_15.jpg' },
+    { id: 'beef_ground_5', path: '/food-images/beef_ground_5.jpg' },
+    { id: 'beef_ribeye_steak', path: '/food-images/beef_ribeye_steak.jpg' },
+    { id: 'beef_sirloin', path: '/food-images/beef_sirloin.jpg' },
+    { id: 'beef_tenderloin', path: '/food-images/beef_tenderloin.jpg' },
+    { id: 'chicken_breast_skinless', path: '/food-images/chicken_breast_skinless.webp' },
+    { id: 'chicken_liver', path: '/food-images/chicken_liver.jpg' },
+    { id: 'chicken_thigh_with_skin', path: '/food-images/chicken_thigh_with_skin.jpg' },
+    { id: 'chicken_wings', path: '/food-images/chicken_wings.jpg' },
+    { id: 'chorizo', path: '/food-images/chorizo.jpg' },
+    { id: 'duck_breast', path: '/food-images/duck_breast.jpg' },
+    { id: 'foie_gras', path: '/food-images/foie_gras.jpg' },
+    { id: 'ham_cooked', path: '/food-images/ham_cooked.jpg' },
+    { id: 'ham_cured', path: '/food-images/ham_cured.jpg' },
+    { id: 'lamb_chop', path: '/food-images/lamb_chop.jpg' },
+    { id: 'lamb_leg', path: '/food-images/lamb_leg.jpg' },
+    { id: 'pepperoni', path: '/food-images/pepperoni.jpg' },
+    { id: 'pork_chop', path: '/food-images/pork_chop.jpg' },
+    { id: 'pork_loin', path: '/food-images/pork_loin.jpg' },
+    { id: 'pork_ribs', path: '/food-images/pork_ribs.jpg' },
+    { id: 'prosciutto', path: '/food-images/prosciutto.jpg' },
+    { id: 'quail', path: '/food-images/quail.jpg' },
+    { id: 'rabbit', path: '/food-images/rabbit.jpg' },
+    { id: 'salami', path: '/food-images/salami.jpg' },
+    { id: 'sausage_pork', path: '/food-images/sausage_pork.jpg' },
+    { id: 'turkey_breast', path: '/food-images/turkey_breast.jpg' },
+    { id: 'turkey_sliced', path: '/food-images/turkey_sliced.jpg' },
+    { id: 'veal_cutlet', path: '/food-images/veal_cutlet.jpg' },
     
-    try {
-      await this.importFoodImageFromPublic('roast_chicken', '/food-images/roast_chicken.webp')
-      await this.importFoodImageFromPublic('shrimp', '/food-images/shrimp.webp')
-      await this.importFoodImageFromPublic('mussels', '/food-images/mussels.jpeg')
-      
-      console.log('✅ All test images imported successfully!')
-    } catch (error) {
-      console.error('❌ Error importing test images:', error)
+    // EGGS
+    { id: 'egg_white', path: '/food-images/egg_white.jpg' },
+    { id: 'egg_whole', path: '/food-images/egg_whole.jpg' },
+    
+    // SEAFOOD
+    { id: 'mussels', path: '/food-images/mussels.jpeg' },
+    { id: 'shrimp', path: '/food-images/shrimp.webp' },
+  ]
+  
+  try {
+    let imported = 0
+    let failed = 0
+    
+    for (const img of imagesToImport) {
+      try {
+        await this.importFoodImageFromPublic(img.id, img.path)
+        imported++
+      } catch (error) {
+        console.warn(`⚠️ Could not import ${img.id}`)
+        failed++
+      }
     }
+    
+    console.log(`✅ Import terminé: ${imported} réussies, ${failed} échouées sur ${imagesToImport.length} total`)
+  } catch (error) {
+    console.error('❌ Error importing images:', error)
   }
+}
 
   // Vérifier si les images ont déjà été importées
   async areTestImagesImported(): Promise<boolean> {
