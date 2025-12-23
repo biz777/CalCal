@@ -40,9 +40,30 @@ interface UserProfile {
 }
 
 export default function Home() {
+ export default function Home() {
  
- // Initialiser les images d'aliments au premier lancement
-const [language, setLanguage] = useState<Language>('en') const [language, setLanguage] = useState<Language>('en')
+  // Initialiser les images d'aliments au premier lancement
+  useEffect(() => {
+    const initFoodImages = async () => {
+      try {
+        const alreadyImported = await dbManager.areTestImagesImported()
+        
+        if (!alreadyImported) {
+          console.log('🔄 Premier lancement - import des images...')
+          await dbManager.importTestImages()
+          console.log('✅ Images prêtes dans IndexedDB!')
+        } else {
+          console.log('✅ Images déjà dans IndexedDB')
+        }
+      } catch (error) {
+        console.error('❌ Erreur initialisation images:', error)
+      }
+    }
+
+    initFoodImages()
+  }, [])
+
+  const [language, setLanguage] = useState<Language>('en')
   const t = useTranslation(language)
   
   // Memoize food database and categories to prevent unnecessary recalculations
