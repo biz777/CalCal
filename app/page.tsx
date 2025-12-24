@@ -620,19 +620,19 @@ export default function Home() {
                 {filteredFoods.map((food, index) => (
                   <div key={index} onClick={() => setSelectedFood(food)} className="p-4 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md cursor-pointer transition-all">
                     <div className="flex gap-3 items-start">
-                      {food.imageUrl && (
-                        <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                          <img 
-                            src={food.imageUrl} 
-                            alt={food.name} 
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              // Fallback si l'image ne charge pas
-                              e.currentTarget.src = `https://via.placeholder.com/64x64/e0e7ff/4f46e5?text=${encodeURIComponent(food.name.charAt(0))}`
-                            }}
-                          />
-                        </div>
-                      )}
+                     {food.imageUrl && !food.imageUrl.includes('placeholder') && (
+  <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+    <img 
+      src={food.imageUrl} 
+      alt={food.name} 
+      className="w-full h-full object-cover"
+      onError={(e) => {
+        e.currentTarget.style.display = 'none'
+        e.currentTarget.parentElement!.style.display = 'none'
+      }}
+    />
+  </div>
+)}
                       <div className="flex-1">
                         <p className="font-semibold text-base text-gray-900">{food.name}</p>
                         <p className="text-xs text-gray-500 mt-1">{food.category}</p>
