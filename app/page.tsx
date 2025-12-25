@@ -40,6 +40,29 @@ interface UserProfile {
 }
 
 export default function Home() {
+
+ 
+  // Initialiser les images d'aliments au premier lancement
+  useEffect(() => {
+    const initFoodImages = async () => {
+      try {
+        const alreadyImported = await dbManager.areTestImagesImported()
+        
+        if (!alreadyImported) {
+          console.log('🔄 Premier lancement - import des images...')
+          await dbManager.importTestImages()
+          console.log('✅ Images prêtes dans IndexedDB!')
+        } else {
+          console.log('✅ Images déjà dans IndexedDB')
+        }
+      } catch (error) {
+        console.error('❌ Erreur initialisation images:', error)
+      }
+    }
+
+    initFoodImages()
+  }, [])
+
   const [language, setLanguage] = useState<Language>('en')
   const t = useTranslation(language)
   
@@ -597,19 +620,13 @@ export default function Home() {
                 {filteredFoods.map((food, index) => (
                   <div key={index} onClick={() => setSelectedFood(food)} className="p-4 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md cursor-pointer transition-all">
                     <div className="flex gap-3 items-start">
-                      {food.imageUrl && (
-                        <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                          <img 
-                            src={food.imageUrl} 
-                            alt={food.name} 
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              // Fallback si l'image ne charge pas
-                              e.currentTarget.src = `https://via.placeholder.com/64x64/e0e7ff/4f46e5?text=${encodeURIComponent(food.name.charAt(0))}`
-                            }}
-                          />
-                        </div>
-                      )}
+                    <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+  <FoodImage 
+    foodId={food.id || food.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}
+    foodName={food.name}
+    className="w-full h-full"
+  />
+</div><div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
                       <div className="flex-1">
                         <p className="font-semibold text-base text-gray-900">{food.name}</p>
                         <p className="text-xs text-gray-500 mt-1">{food.category}</p>
