@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react'
+'use client'
+
+import { useEffect, useState } from 'react'
 import dbManager from '@/lib/indexedDB'
 
 interface FoodImageProps {
@@ -8,22 +10,18 @@ interface FoodImageProps {
 }
 
 export function FoodImage({ foodId, foodName, className = '' }: FoodImageProps) {
-  const [imageUrl, setImageUrl] = useState<string>('')
+  const [imageSrc, setImageSrc] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadImage = async () => {
       try {
-        const image = await dbManager.getFoodImage(foodId)
-        
-        if (image) {
-          setImageUrl(image)
-        } else {
-          setImageUrl('')
+        const imageData = await dbManager.getPhoto(`food_${foodId}`)
+        if (imageData) {
+          setImageSrc(imageData)
         }
       } catch (error) {
-        console.error(`Error loading image for ${foodId}:`, error)
-        setImageUrl('')
+        console.log(`Image non trouvée pour ${foodId}`)
       } finally {
         setLoading(false)
       }
@@ -34,29 +32,25 @@ export function FoodImage({ foodId, foodName, className = '' }: FoodImageProps) 
 
   if (loading) {
     return (
-      <div className={`bg-indigo-100 flex items-center justify-center ${className}`}>
-        <span className="text-indigo-600 font-bold text-2xl">
-          {foodName.charAt(0).toUpperCase()}
-        </span>
+      <div className={`bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center ${className}`}>
+        <span className="text-2xl">🍽️</span>
       </div>
     )
   }
 
-  if (imageUrl) {
+  if (!imageSrc) {
     return (
-      <img 
-        src={imageUrl} 
-        alt={foodName}
-        className={`object-cover ${className}`}
-      />
+      <div className={`bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center ${className}`}>
+        <span className="text-2xl">🍽️</span>
+      </div>
     )
   }
 
   return (
-    <div className={`bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center ${className}`}>
-      <span className="text-indigo-600 font-bold text-2xl">
-        {foodName.charAt(0).toUpperCase()}
-      </span>
-    </div>
+    <img 
+      src={imageSrc} 
+      alt={foodName} 
+      className={`object-cover ${className}`}
+    />
   )
 }
