@@ -12,6 +12,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { useDropzone } from 'react-dropzone'
 import Image from 'next/image'
 import dbManager from '@/lib/indexedDB'
+import { FoodImage } from '@/components/FoodImage'
 
 interface Meal {
   id: string
@@ -254,12 +255,12 @@ export default function Home() {
 
   const MacroBar = ({ label, current, target, color }: { label: string; current: number; target: number; color: string }) => (
     <div>
-      <div className={"flex justify-between mb-2">
-        <span className={"font-semibold text-base text-gray-700">{label}</span>
-        <span className={"text-base font-bold text-gray-900">{Math.round(current)}{t.grams} / {target}{t.grams}</span>
+      <div className="flex justify-between mb-2">
+        <span className="font-semibold text-base text-gray-700">{label}</span>
+        <span className="text-base font-bold text-gray-900">{Math.round(current)}{t.grams} / {target}{t.grams}</span>
       </div>
-      <div className={"w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
-        <div className={{`${color} h-3 rounded-full transition-all duration-500 shadow-md`} style={{ width: `${Math.min((current / target) * 100, 100)}%` }} />
+      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+        <div className={`${color} h-3 rounded-full transition-all duration-500 shadow-md`} style={{ width: `${Math.min((current / target) * 100, 100)}%` }} />
       </div>
     </div>
   )
@@ -374,53 +375,53 @@ export default function Home() {
   })
 
   return (
-    <div className={"min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50">
       {showGuide && (
-        <div className={"fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className={"max-w-2xl w-full border-2 border-indigo-300 shadow-2xl">
-            <CardHeader className={"bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200">
-              <div className={"flex justify-between items-start">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="max-w-2xl w-full border-2 border-indigo-300 shadow-2xl">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200">
+              <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className={"text-3xl text-gray-900 mb-2">{t.welcomeGuide}</CardTitle>
-                  <CardDescription className={"text-base">{t.learnFeatures}</CardDescription>
+                  <CardTitle className="text-3xl text-gray-900 mb-2">{t.welcomeGuide}</CardTitle>
+                  <CardDescription className="text-base">{t.learnFeatures}</CardDescription>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setShowGuide(false)} className={"hover:bg-indigo-100">
-                  <X className={"w-5 h-5" />
+                <Button variant="ghost" size="icon" onClick={() => setShowGuide(false)} className="hover:bg-indigo-100">
+                  <X className="w-5 h-5" />
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className={"space-y-6 pt-6">
-              <div className={"space-y-4">
-                <div className={"flex gap-4 items-start p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
-                  <div className={"bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+            <CardContent className="space-y-6 pt-6">
+              <div className="space-y-4">
+                <div className="flex gap-4 items-start p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
+                  <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
                   <div>
-                    <h4 className={"font-bold text-lg text-gray-900 mb-1">{t.guideStep1Title}</h4>
-                    <p className={"text-gray-700 leading-relaxed">{t.guideStep1Desc}</p>
+                    <h4 className="font-bold text-lg text-gray-900 mb-1">{t.guideStep1Title}</h4>
+                    <p className="text-gray-700 leading-relaxed">{t.guideStep1Desc}</p>
                   </div>
                 </div>
-                <div className={"flex gap-4 items-start p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
-                  <div className={"bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+                <div className="flex gap-4 items-start p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
+                  <div className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
                   <div>
-                    <h4 className={"font-bold text-lg text-gray-900 mb-1">{t.guideStep2Title}</h4>
-                    <p className={"text-gray-700 leading-relaxed">{t.guideStep2Desc}</p>
+                    <h4 className="font-bold text-lg text-gray-900 mb-1">{t.guideStep2Title}</h4>
+                    <p className="text-gray-700 leading-relaxed">{t.guideStep2Desc}</p>
                   </div>
                 </div>
-                <div className={"flex gap-4 items-start p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200">
-                  <div className={"bg-purple-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+                <div className="flex gap-4 items-start p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200">
+                  <div className="bg-purple-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
                   <div>
-                    <h4 className={"font-bold text-lg text-gray-900 mb-1">{t.guideStep3Title}</h4>
-                    <p className={"text-gray-700 leading-relaxed">{t.guideStep3Desc}</p>
+                    <h4 className="font-bold text-lg text-gray-900 mb-1">{t.guideStep3Title}</h4>
+                    <p className="text-gray-700 leading-relaxed">{t.guideStep3Desc}</p>
                   </div>
                 </div>
-                <div className={"flex gap-4 items-start p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border-2 border-orange-200">
-                  <div className={"bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">4</div>
+                <div className="flex gap-4 items-start p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border-2 border-orange-200">
+                  <div className="bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">4</div>
                   <div>
-                    <h4 className={"font-bold text-lg text-gray-900 mb-1">{t.guideStep4Title}</h4>
-                    <p className={"text-gray-700 leading-relaxed">{t.guideStep4Desc}</p>
+                    <h4 className="font-bold text-lg text-gray-900 mb-1">{t.guideStep4Title}</h4>
+                    <p className="text-gray-700 leading-relaxed">{t.guideStep4Desc}</p>
                   </div>
                 </div>
               </div>
-              <Button onClick={() => { setShowGuide(false); localStorage.setItem('hasSeenGuide', 'true') }} className={"w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-base font-semibold shadow-lg">
+              <Button onClick={() => { setShowGuide(false); localStorage.setItem('hasSeenGuide', 'true') }} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-base font-semibold shadow-lg">
                 {t.gotIt}
               </Button>
             </CardContent>
@@ -429,39 +430,39 @@ export default function Home() {
       )}
 
       {showProfile && (
-        <div className={"fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className={"max-w-md w-full border-2 border-indigo-300 shadow-2xl">
-            <CardHeader className={"bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200">
-              <CardTitle className={"text-2xl text-gray-900">{t.setupProfile}</CardTitle>
-              <CardDescription className={"text-base">{t.profileDesc}</CardDescription>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full border-2 border-indigo-300 shadow-2xl">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200">
+              <CardTitle className="text-2xl text-gray-900">{t.setupProfile}</CardTitle>
+              <CardDescription className="text-base">{t.profileDesc}</CardDescription>
             </CardHeader>
-            <CardContent className={"space-y-4 pt-6">
-              <div className={"grid grid-cols-2 gap-4">
+            <CardContent className="space-y-4 pt-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className={"text-base font-semibold">{t.age}</Label>
-                  <Input type="number" value={profile.age} onChange={(e) => setProfile({...profile, age: parseInt(e.target.value)})} className={"mt-2 h-11 text-base border-2" />
+                  <Label className="text-base font-semibold">{t.age}</Label>
+                  <Input type="number" value={profile.age} onChange={(e) => setProfile({...profile, age: parseInt(e.target.value)})} className="mt-2 h-11 text-base border-2" />
                 </div>
                 <div>
-                  <Label className={"text-base font-semibold">{t.gender}</Label>
-                  <select value={profile.gender} onChange={(e) => setProfile({...profile, gender: e.target.value as 'male' | 'female'})} className={"w-full mt-2 h-11 px-3 rounded-md border-2 text-base bg-white">
+                  <Label className="text-base font-semibold">{t.gender}</Label>
+                  <select value={profile.gender} onChange={(e) => setProfile({...profile, gender: e.target.value as 'male' | 'female'})} className="w-full mt-2 h-11 px-3 rounded-md border-2 text-base bg-white">
                     <option value="male">{t.male}</option>
                     <option value="female">{t.female}</option>
                   </select>
                 </div>
               </div>
-              <div className={"grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className={"text-base font-semibold">{t.weight}</Label>
-                  <Input type="number" value={profile.weight} onChange={(e) => setProfile({...profile, weight: parseInt(e.target.value)})} className={"mt-2 h-11 text-base border-2" />
+                  <Label className="text-base font-semibold">{t.weight}</Label>
+                  <Input type="number" value={profile.weight} onChange={(e) => setProfile({...profile, weight: parseInt(e.target.value)})} className="mt-2 h-11 text-base border-2" />
                 </div>
                 <div>
-                  <Label className={"text-base font-semibold">{t.height}</Label>
-                  <Input type="number" value={profile.height} onChange={(e) => setProfile({...profile, height: parseInt(e.target.value)})} className={"mt-2 h-11 text-base border-2" />
+                  <Label className="text-base font-semibold">{t.height}</Label>
+                  <Input type="number" value={profile.height} onChange={(e) => setProfile({...profile, height: parseInt(e.target.value)})} className="mt-2 h-11 text-base border-2" />
                 </div>
               </div>
               <div>
-                <Label className={"text-base font-semibold">{t.activityLevel}</Label>
-                <select value={profile.activityLevel} onChange={(e) => setProfile({...profile, activityLevel: e.target.value as any})} className={"w-full mt-2 h-11 px-3 rounded-md border-2 text-base bg-white">
+                <Label className="text-base font-semibold">{t.activityLevel}</Label>
+                <select value={profile.activityLevel} onChange={(e) => setProfile({...profile, activityLevel: e.target.value as any})} className="w-full mt-2 h-11 px-3 rounded-md border-2 text-base bg-white">
                   <option value="sedentary">{t.sedentary}</option>
                   <option value="light">{t.light}</option>
                   <option value="moderate">{t.moderate}</option>
@@ -470,14 +471,14 @@ export default function Home() {
                 </select>
               </div>
               <div>
-                <Label className={"text-base font-semibold">{t.goal}</Label>
-                <select value={profile.goal} onChange={(e) => setProfile({...profile, goal: e.target.value as any})} className={"w-full mt-2 h-11 px-3 rounded-md border-2 text-base bg-white">
+                <Label className="text-base font-semibold">{t.goal}</Label>
+                <select value={profile.goal} onChange={(e) => setProfile({...profile, goal: e.target.value as any})} className="w-full mt-2 h-11 px-3 rounded-md border-2 text-base bg-white">
                   <option value="lose">{t.loseWeight}</option>
                   <option value="maintain">{t.maintainWeight}</option>
                   <option value="gain">{t.gainWeight}</option>
                 </select>
               </div>
-              <Button onClick={saveProfile} className={"w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-base font-semibold shadow-lg">
+              <Button onClick={saveProfile} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-base font-semibold shadow-lg">
                 {t.save}
               </Button>
             </CardContent>
@@ -486,21 +487,21 @@ export default function Home() {
       )}
 
       {showCharts && (
-        <div className={"fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className={"max-w-4xl w-full border-2 border-indigo-300 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader className={"bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200 sticky top-0 z-10">
-              <div className={"flex justify-between items-start">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="max-w-4xl w-full border-2 border-indigo-300 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200 sticky top-0 z-10">
+              <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className={"text-2xl text-gray-900">{t.weeklyProgress}</CardTitle>
-                  <CardDescription className={"text-base">{t.last7Days}</CardDescription>
+                  <CardTitle className="text-2xl text-gray-900">{t.weeklyProgress}</CardTitle>
+                  <CardDescription className="text-base">{t.last7Days}</CardDescription>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setShowCharts(false)} className={"hover:bg-indigo-100">
-                  <X className={"w-5 h-5" />
+                <Button variant="ghost" size="icon" onClick={() => setShowCharts(false)} className="hover:bg-indigo-100">
+                  <X className="w-5 h-5" />
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className={"space-y-6 pt-6">
-              <div className={"h-80">
+            <CardContent className="space-y-6 pt-6">
+              <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={historyData.slice().reverse()}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -520,64 +521,64 @@ export default function Home() {
         </div>
       )}
 
-      <div className={"container mx-auto px-4 py-6 max-w-7xl">
-        <div className={"flex items-center justify-between mb-8 bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-lg border-2 border-indigo-200">
-          <div className={"flex items-center gap-4">
-            <div className={"bg-gradient-to-br from-indigo-600 to-purple-600 p-3 rounded-xl shadow-lg">
-              <UtensilsCrossed className={"w-8 h-8 text-white" />
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="flex items-center justify-between mb-8 bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-lg border-2 border-indigo-200">
+          <div className="flex items-center gap-4">
+            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-3 rounded-xl shadow-lg">
+              <UtensilsCrossed className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className={"text-3xl font-bold text-gray-900">{t.title}</h1>
-              <p className={"text-base text-gray-600">{t.subtitle}</p>
+              <h1 className="text-3xl font-bold text-gray-900">{t.title}</h1>
+              <p className="text-base text-gray-600">{t.subtitle}</p>
             </div>
           </div>
-          <div className={"flex items-center gap-3">
-            <div className={"flex gap-2">
-              <Button variant={language === 'en' ? 'default' : 'outline'} onClick={() => { setLanguage('en'); localStorage.setItem('language', 'en') }} size="sm" className={{language === 'en' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
+          <div className="flex items-center gap-3">
+            <div className="flex gap-2">
+              <Button variant={language === 'en' ? 'default' : 'outline'} onClick={() => { setLanguage('en'); localStorage.setItem('language', 'en') }} size="sm" className={language === 'en' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
                 🇺🇸 {t.en}
               </Button>
-              <Button variant={language === 'fr' ? 'default' : 'outline'} onClick={() => { setLanguage('fr'); localStorage.setItem('language', 'fr') }} size="sm" className={{language === 'fr' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
+              <Button variant={language === 'fr' ? 'default' : 'outline'} onClick={() => { setLanguage('fr'); localStorage.setItem('language', 'fr') }} size="sm" className={language === 'fr' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
                 🇫🇷 {t.fr}
               </Button>
-              <Button variant={language === 'es' ? 'default' : 'outline'} onClick={() => { setLanguage('es'); localStorage.setItem('language', 'es') }} size="sm" className={{language === 'es' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
+              <Button variant={language === 'es' ? 'default' : 'outline'} onClick={() => { setLanguage('es'); localStorage.setItem('language', 'es') }} size="sm" className={language === 'es' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
                 🇪🇸 {t.es}
               </Button>
             </div>
-            <Button variant="outline" size="icon" onClick={() => setShowCharts(true)} className={"border-2 hover:border-indigo-400">
-              <TrendingUp className={"w-5 h-5" />
+            <Button variant="outline" size="icon" onClick={() => setShowCharts(true)} className="border-2 hover:border-indigo-400">
+              <TrendingUp className="w-5 h-5" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => setShowProfile(true)} className={"border-2 hover:border-indigo-400">
-              <User className={"w-5 h-5" />
+            <Button variant="outline" size="icon" onClick={() => setShowProfile(true)} className="border-2 hover:border-indigo-400">
+              <User className="w-5 h-5" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => setShowGuide(true)} className={"border-2 hover:border-indigo-400">
-              <Info className={"w-5 h-5" />
+            <Button variant="outline" size="icon" onClick={() => setShowGuide(true)} className="border-2 hover:border-indigo-400">
+              <Info className="w-5 h-5" />
             </Button>
           </div>
         </div>
 
-        <div className={"grid md:grid-cols-2 gap-6 mb-6">
-          <Card className={"border-2 border-indigo-300 shadow-xl bg-white">
-            <CardHeader className={"pb-3">
-              <CardTitle className={"text-2xl text-gray-800">{t.dailyCalories}</CardTitle>
-              <CardDescription className={"text-base font-medium">{t.target}: {dailyCalories} {t.kcal}</CardDescription>
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <Card className="border-2 border-indigo-300 shadow-xl bg-white">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-2xl text-gray-800">{t.dailyCalories}</CardTitle>
+              <CardDescription className="text-base font-medium">{t.target}: {dailyCalories} {t.kcal}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className={"text-center py-6">
-                <div className={"text-6xl font-bold text-indigo-600">{Math.round(totals.calories)}</div>
-                <div className={"text-lg text-gray-600 mt-2">{t.consumed}</div>
-                <div className={"w-full bg-gray-200 rounded-full h-4 mt-4 overflow-hidden shadow-inner">
-                  <div className={"bg-gradient-to-r from-indigo-500 to-purple-600 h-4 rounded-full transition-all duration-500 shadow-md" style={{ width: `${Math.min((totals.calories / dailyCalories) * 100, 100)}%` }} />
+              <div className="text-center py-6">
+                <div className="text-6xl font-bold text-indigo-600">{Math.round(totals.calories)}</div>
+                <div className="text-lg text-gray-600 mt-2">{t.consumed}</div>
+                <div className="w-full bg-gray-200 rounded-full h-4 mt-4 overflow-hidden shadow-inner">
+                  <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-4 rounded-full transition-all duration-500 shadow-md" style={{ width: `${Math.min((totals.calories / dailyCalories) * 100, 100)}%` }} />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className={"border-2 border-indigo-300 shadow-xl bg-white">
-            <CardHeader className={"pb-3">
-              <CardTitle className={"text-2xl text-gray-800">{t.macronutrients}</CardTitle>
-              <CardDescription className={"text-base font-medium">{t.dailyDistribution}</CardDescription>
+          <Card className="border-2 border-indigo-300 shadow-xl bg-white">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-2xl text-gray-800">{t.macronutrients}</CardTitle>
+              <CardDescription className="text-base font-medium">{t.dailyDistribution}</CardDescription>
             </CardHeader>
-            <CardContent className={"space-y-5">
+            <CardContent className="space-y-5">
               <MacroBar label={t.protein} current={totals.protein} target={recommendedMacros.protein} color="bg-gradient-to-r from-red-500 to-red-600" />
               <MacroBar label={t.carbs} current={totals.carbs} target={recommendedMacros.carbs} color="bg-gradient-to-r from-blue-500 to-blue-600" />
               <MacroBar label={t.fat} current={totals.fat} target={recommendedMacros.fat} color="bg-gradient-to-r from-yellow-500 to-orange-500" />
@@ -585,19 +586,19 @@ export default function Home() {
           </Card>
         </div>
 
-        <Card className={"border-2 border-indigo-300 shadow-xl bg-white mb-6">
-          <CardHeader className={"bg-gradient-to-r from-indigo-50 to-purple-50">
-            <CardTitle className={"text-2xl text-gray-800">{t.addFood}</CardTitle>
-            <CardDescription className={"text-base">{t.selectCategory}</CardDescription>
+        <Card className="border-2 border-indigo-300 shadow-xl bg-white mb-6">
+          <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50">
+            <CardTitle className="text-2xl text-gray-800">{t.addFood}</CardTitle>
+            <CardDescription className="text-base">{t.selectCategory}</CardDescription>
           </CardHeader>
-          <CardContent className={"space-y-4 pt-6">
-            <div className={"flex gap-2 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-indigo-400 scrollbar-track-indigo-100" style={{ scrollbarWidth: 'thin', scrollbarColor: '#818cf8 #e0e7ff' }}>
+          <CardContent className="space-y-4 pt-6">
+            <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-indigo-400 scrollbar-track-indigo-100" style={{ scrollbarWidth: 'thin', scrollbarColor: '#818cf8 #e0e7ff' }}>
               <style jsx>{`div::-webkit-scrollbar{height:8px}div::-webkit-scrollbar-track{background:#e0e7ff;border-radius:10px}div::-webkit-scrollbar-thumb{background:#818cf8;border-radius:10px}div::-webkit-scrollbar-thumb:hover{background:#6366f1}`}</style>
-              <Button variant={selectedCategory === 'all' ? 'default' : 'outline'} onClick={() => setSelectedCategory('all')} size="sm" className={{selectedCategory === 'all' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-md' : 'border-2 hover:border-indigo-300'}>
+              <Button variant={selectedCategory === 'all' ? 'default' : 'outline'} onClick={() => setSelectedCategory('all')} size="sm" className={selectedCategory === 'all' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-md' : 'border-2 hover:border-indigo-300'}>
                 {t.all}
               </Button>
               {categories.map(cat => (
-                <Button key={cat} variant={selectedCategory === cat ? 'default' : 'outline'} onClick={() => setSelectedCategory(cat)} size="sm" className={{selectedCategory === cat ? 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-md whitespace-nowrap' : 'whitespace-nowrap border-2 hover:border-indigo-300'}>
+                <Button key={cat} variant={selectedCategory === cat ? 'default' : 'outline'} onClick={() => setSelectedCategory(cat)} size="sm" className={selectedCategory === cat ? 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-md whitespace-nowrap' : 'whitespace-nowrap border-2 hover:border-indigo-300'}>
                   {cat}
                 </Button>
               ))}
@@ -612,29 +613,29 @@ export default function Home() {
                   setSelectedCategory('all')
                 }
               }} 
-              className={"h-12 text-base border-2 focus:border-indigo-400" 
+              className="h-12 text-base border-2 focus:border-indigo-400" 
             />
 
             {!selectedFood && (
-              <div className={"grid md:grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2">
+              <div className="grid md:grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2">
                 {filteredFoods.map((food, index) => (
-                  <div key={index} onClick={() => setSelectedFood(food)} className={"p-4 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md cursor-pointer transition-all">
-                    <div className={"flex gap-3 items-start">
-                    <div className={"relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-  <FoodImage 
-    foodId={food.id || food.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}
-    foodName={food.name}
-    className={"w-full h-full"
-  />
-</div><div className={"relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                      <div className={"flex-1">
-                        <p className={"font-semibold text-base text-gray-900">{food.name}</p>
-                        <p className={"text-xs text-gray-500 mt-1">{food.category}</p>
-                        {food.unit && <p className={"text-xs text-indigo-600 mt-1 font-medium">{food.unit}</p>}
+                  <div key={index} onClick={() => setSelectedFood(food)} className="p-4 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md cursor-pointer transition-all">
+                    <div className="flex gap-3 items-start">
+                      <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                        <FoodImage 
+                          foodId={food.id || food.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}
+                          foodName={food.name}
+                          className="w-full h-full"
+                        />
                       </div>
-                      <div className={"text-right text-sm">
-                        <p className={"font-bold text-indigo-600 text-lg">{food.calories} {t.kcal}</p>
-                        <p className={"text-gray-500 text-xs mt-1">P:{food.protein}{t.grams} C:{food.carbs}{t.grams} L:{food.fat}{t.grams}</p>
+                      <div className="flex-1">
+                        <p className="font-semibold text-base text-gray-900">{food.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">{food.category}</p>
+                        {food.unit && <p className="text-xs text-indigo-600 mt-1 font-medium">{food.unit}</p>}
+                      </div>
+                      <div className="text-right text-sm">
+                        <p className="font-bold text-indigo-600 text-lg">{food.calories} {t.kcal}</p>
+                        <p className="text-gray-500 text-xs mt-1">P:{food.protein}{t.grams} C:{food.carbs}{t.grams} L:{food.fat}{t.grams}</p>
                       </div>
                     </div>
                   </div>
@@ -643,19 +644,19 @@ export default function Home() {
             )}
 
             {selectedFood && (
-              <div className={"p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border-2 border-indigo-400 shadow-lg space-y-4">
+              <div className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border-2 border-indigo-400 shadow-lg space-y-4">
                 <div>
-                  <h3 className={"font-bold text-xl text-gray-900">{selectedFood.name}</h3>
-                  <p className={"text-sm text-gray-600 mt-1">{selectedFood.category}</p>
-                  {selectedFood.unit && <p className={"text-sm text-indigo-600 font-medium mt-1">{selectedFood.unit}</p>}
+                  <h3 className="font-bold text-xl text-gray-900">{selectedFood.name}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{selectedFood.category}</p>
+                  {selectedFood.unit && <p className="text-sm text-indigo-600 font-medium mt-1">{selectedFood.unit}</p>}
                 </div>
                 
-                <div {...getRootProps()} className={{`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${isDragActive ? 'border-indigo-500 bg-indigo-50' : uploadedPhoto ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-indigo-400'}`}>
+                <div {...getRootProps()} className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${isDragActive ? 'border-indigo-500 bg-indigo-50' : uploadedPhoto ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-indigo-400'}`}>
                   <input {...getInputProps()} />
                   {uploadedPhoto ? (
-                    <div className={"space-y-2">
-                      <img src={uploadedPhoto} alt="Preview" className={"max-h-32 mx-auto rounded" />
-                      <p className={"text-sm text-green-600 font-medium">✓ {t.photoAdded || 'Photo ajoutée'}</p>
+                    <div className="space-y-2">
+                      <img src={uploadedPhoto} alt="Preview" className="max-h-32 mx-auto rounded" />
+                      <p className="text-sm text-green-600 font-medium">✓ {t.photoAdded || 'Photo ajoutée'}</p>
                       <Button 
                         type="button"
                         variant="outline" 
@@ -664,41 +665,41 @@ export default function Home() {
                           e.stopPropagation()
                           setUploadedPhoto(null)
                         }}
-                        className={"mt-2"
+                        className="mt-2"
                       >
                         {t.removePhoto || 'Retirer la photo'}
                       </Button>
                     </div>
                   ) : (
-                    <div className={"space-y-2">
-                      <Camera className={"w-8 h-8 mx-auto text-gray-400" />
-                      <p className={"text-sm text-gray-600">{isDragActive ? (t.dropPhoto || 'Déposez la photo ici') : (t.uploadPhoto || 'Cliquez ou déposez une photo')}</p>
+                    <div className="space-y-2">
+                      <Camera className="w-8 h-8 mx-auto text-gray-400" />
+                      <p className="text-sm text-gray-600">{isDragActive ? (t.dropPhoto || 'Déposez la photo ici') : (t.uploadPhoto || 'Cliquez ou déposez une photo')}</p>
                     </div>
                   )}
                 </div>
                 
-                <div className={"grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="qty" className={"text-base font-semibold">{t.quantity}</Label>
-                    <Input id="qty" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} className={"mt-2 h-12 text-lg border-2" />
+                    <Label htmlFor="qty" className="text-base font-semibold">{t.quantity}</Label>
+                    <Input id="qty" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="mt-2 h-12 text-lg border-2" />
                   </div>
-                  <div className={"space-y-1">
-                    <p className={"text-base font-semibold text-gray-700">{t.totalsFor} {quantity}{t.grams}</p>
-                    <div className={"bg-white p-3 rounded-lg border-2 border-indigo-200 shadow-sm text-sm space-y-1">
-                      <p className={"text-lg"><span className={"font-bold text-indigo-600">{Math.round((selectedFood.calories * parseFloat(quantity || '0')) / 100)} {t.kcal}</span></p>
-                      <p className={"text-gray-700">{t.protein}: <span className={"font-semibold">{Math.round((selectedFood.protein * parseFloat(quantity || '0')) / 100)}{t.grams}</span></p>
-                      <p className={"text-gray-700">{t.carbs}: <span className={"font-semibold">{Math.round((selectedFood.carbs * parseFloat(quantity || '0')) / 100)}{t.grams}</span></p>
-                      <p className={"text-gray-700">{t.fat}: <span className={"font-semibold">{Math.round((selectedFood.fat * parseFloat(quantity || '0')) / 100)}{t.grams}</span></p>
+                  <div className="space-y-1">
+                    <p className="text-base font-semibold text-gray-700">{t.totalsFor} {quantity}{t.grams}</p>
+                    <div className="bg-white p-3 rounded-lg border-2 border-indigo-200 shadow-sm text-sm space-y-1">
+                      <p className="text-lg"><span className="font-bold text-indigo-600">{Math.round((selectedFood.calories * parseFloat(quantity || '0')) / 100)} {t.kcal}</span></p>
+                      <p className="text-gray-700">{t.protein}: <span className="font-semibold">{Math.round((selectedFood.protein * parseFloat(quantity || '0')) / 100)}{t.grams}</span></p>
+                      <p className="text-gray-700">{t.carbs}: <span className="font-semibold">{Math.round((selectedFood.carbs * parseFloat(quantity || '0')) / 100)}{t.grams}</span></p>
+                      <p className="text-gray-700">{t.fat}: <span className="font-semibold">{Math.round((selectedFood.fat * parseFloat(quantity || '0')) / 100)}{t.grams}</span></p>
                     </div>
                   </div>
                 </div>
                 
-                <div className={"flex gap-3">
-                  <Button onClick={addMeal} className={"flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 h-12 text-base font-semibold shadow-md" disabled={!quantity}>
-                    <Plus className={"w-5 h-5 mr-2" />
+                <div className="flex gap-3">
+                  <Button onClick={addMeal} className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 h-12 text-base font-semibold shadow-md" disabled={!quantity}>
+                    <Plus className="w-5 h-5 mr-2" />
                     {t.addMeal}
                   </Button>
-                  <Button onClick={() => { setSelectedFood(null); setSearchQuery(''); setUploadedPhoto(null) }} variant="outline" className={"border-2 hover:bg-gray-100 h-12">
+                  <Button onClick={() => { setSelectedFood(null); setSearchQuery(''); setUploadedPhoto(null) }} variant="outline" className="border-2 hover:bg-gray-100 h-12">
                     {t.cancel}
                   </Button>
                 </div>
@@ -707,32 +708,32 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <Card className={"border-2 border-indigo-300 shadow-xl bg-white mb-6">
-          <CardHeader className={"bg-gradient-to-r from-indigo-50 to-purple-50">
-            <CardTitle className={"text-2xl text-gray-800">{t.mealsOfDay} ({meals.length})</CardTitle>
+        <Card className="border-2 border-indigo-300 shadow-xl bg-white mb-6">
+          <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50">
+            <CardTitle className="text-2xl text-gray-800">{t.mealsOfDay} ({meals.length})</CardTitle>
           </CardHeader>
-          <CardContent className={"pt-6">
+          <CardContent className="pt-6">
             {meals.length === 0 ? (
-              <div className={"text-center py-12 text-gray-500">
-                <UtensilsCrossed className={"w-16 h-16 mx-auto mb-4 opacity-40" />
-                <p className={"text-lg font-medium">{t.noMeals}</p>
-                <p className={"text-sm mt-2">{t.startAdding}</p>
+              <div className="text-center py-12 text-gray-500">
+                <UtensilsCrossed className="w-16 h-16 mx-auto mb-4 opacity-40" />
+                <p className="text-lg font-medium">{t.noMeals}</p>
+                <p className="text-sm mt-2">{t.startAdding}</p>
               </div>
             ) : (
-              <div className={"space-y-3">
+              <div className="space-y-3">
                 {meals.map((meal) => {
                   const multiplier = meal.quantity / 100
                   const photoUrl = meal.photoId ? loadedPhotos.get(meal.photoId) : undefined
                   return (
-                    <div key={meal.id} className={"flex items-center gap-4 p-5 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all">
+                    <div key={meal.id} className="flex items-center gap-4 p-5 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all">
                       {photoUrl && (
-                        <div className={"relative w-20 h-20 flex-shrink-0">
-                          <img src={photoUrl} alt={meal.food.name} className={"w-full h-full object-cover rounded-lg shadow" />
+                        <div className="relative w-20 h-20 flex-shrink-0">
+                          <img src={photoUrl} alt={meal.food.name} className="w-full h-full object-cover rounded-lg shadow" />
                         </div>
                       )}
-                      <div className={"flex-1">
-                        <h3 className={"font-bold text-lg text-gray-900">{meal.food.name}</h3>
-                        <div className={"flex gap-4 text-sm text-gray-600 mt-2 font-medium">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg text-gray-900">{meal.food.name}</h3>
+                        <div className="flex gap-4 text-sm text-gray-600 mt-2 font-medium">
                           <span>🕐 {meal.time}</span>
                           <span>• ⚖️ {meal.quantity}{t.grams}</span>
                           <span>• P:{Math.round(meal.food.protein * multiplier)}{t.grams}</span>
@@ -740,10 +741,10 @@ export default function Home() {
                           <span>L:{Math.round(meal.food.fat * multiplier)}{t.grams}</span>
                         </div>
                       </div>
-                      <div className={"flex items-center gap-4">
-                        <span className={"text-2xl font-bold text-indigo-600">{Math.round(meal.food.calories * multiplier)} {t.kcal}</span>
-                        <Button variant="ghost" size="icon" onClick={() => deleteMeal(meal.id)} className={"text-red-500 hover:text-red-700 hover:bg-red-50 border-2 border-transparent hover:border-red-200">
-                          <Trash2 className={"w-5 h-5" />
+                      <div className="flex items-center gap-4">
+                        <span className="text-2xl font-bold text-indigo-600">{Math.round(meal.food.calories * multiplier)} {t.kcal}</span>
+                        <Button variant="ghost" size="icon" onClick={() => deleteMeal(meal.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 border-2 border-transparent hover:border-red-200">
+                          <Trash2 className="w-5 h-5" />
                         </Button>
                       </div>
                     </div>
@@ -754,7 +755,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <div className={"mt-8 text-center text-gray-500 text-sm pb-6">
+        <div className="mt-8 text-center text-gray-500 text-sm pb-6">
           <p>{language === 'fr' ? `© ${new Date().getFullYear()} Calorie Tracker Pro - Tous droits réservés` : language === 'es' ? `© ${new Date().getFullYear()} Calorie Tracker Pro - Todos los derechos reservados` : `© ${new Date().getFullYear()} Calorie Tracker Pro - All rights reserved`}</p>
         </div>
       </div>
