@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import dbManager from '@/lib/indexedDB'
 
 interface FoodImageProps {
@@ -16,7 +17,8 @@ export function FoodImage({ foodId, foodName, className = '' }: FoodImageProps) 
   useEffect(() => {
     const loadImage = async () => {
       try {
-        const imageData = await dbManager.getFoodImage(foodId)
+        // Essayer de charger l'image depuis IndexedDB
+        const imageData = await dbManager.getPhoto(`food_${foodId}`)
         if (imageData) {
           setImageSrc(imageData)
         }
@@ -39,6 +41,7 @@ export function FoodImage({ foodId, foodName, className = '' }: FoodImageProps) 
   }
 
   if (!imageSrc) {
+    // Image par défaut si pas d'image trouvée
     return (
       <div className={`bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center ${className}`}>
         <span className="text-2xl">🍽️</span>
