@@ -16,7 +16,7 @@ export function FoodImage({ foodId, foodName, className = '' }: FoodImageProps) 
   useEffect(() => {
     const loadImage = async () => {
       try {
-        const imageData = await dbManager.getPhoto(`food_${foodId}`)
+        const imageData = await dbManager.getFoodImage(foodId)
         if (imageData) {
           setImageSrc(imageData)
         }
