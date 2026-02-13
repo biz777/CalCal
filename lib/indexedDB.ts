@@ -341,7 +341,7 @@ async importTestImages(): Promise<void> {
     { id: 'salami', path: '/food-images/salami.jpg' },
     { id: 'sausage_pork', path: '/food-images/sausage_pork.jpg' },
     { id: 'turkey_breast', path: '/food-images/turkey_breast.jpg' },
-    { id: 'turkey_ground', path: '/food-images/turkey_ ground.jpg' },
+    { id: 'turkey_ground', path: '/food-images/turkey_ground.jpg' },
     { id: 'veal_cutlet', path: '/food-images/veal_cutlet.jpg' },
     
     // EGGS
