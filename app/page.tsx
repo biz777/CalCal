@@ -625,6 +625,7 @@ export default function Home() {
                         <FoodImage 
                           foodId={food.id || food.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}
                           foodName={food.name}
+                          foodCategory={food.category}
                           className="w-full h-full"
                         />
                       </div>
