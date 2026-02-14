@@ -630,7 +630,7 @@ export default function Home() {
                         />
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-base text-gray-900">{food.name}</p>
+                        <p className="font-semibold text-lg text-gray-900">{food.name}</p>
                         <p className="text-xs text-gray-500 mt-1">{food.category}</p>
                         {food.unit && <p className="text-xs text-indigo-600 mt-1 font-medium">{food.unit}</p>}
                       </div>
