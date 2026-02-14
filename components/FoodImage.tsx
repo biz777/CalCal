@@ -108,7 +108,7 @@ export function FoodImage({ foodId, foodName, foodCategory, className = '' }: Fo
 
   return (
     <div className={`bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center ${className}`}>
-      <span className="text-3xl">{emoji}</span>
+      <span className="text-4xl">{emoji}</span>
     </div>
   )
 }
