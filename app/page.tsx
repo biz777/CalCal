@@ -582,7 +582,7 @@ export default function Home() {
               <ChevronLeft className="w-5 h-5" />
             </Button>
 
-            <div className="flex gap-2 overflow-x-auto px-2">
+            <div className="flex gap-2 overflow-x-auto px-2 scrollbar-none" style={{msOverflowStyle:'none', scrollbarWidth:'none'}}>
               {last7Days.map(date => {
                 const hasData = hasDataForDay(date)
                 const isSelected = date === selectedDate
