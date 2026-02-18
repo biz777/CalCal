@@ -769,7 +769,42 @@ export default function Home() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="qty" className="text-base font-semibold">{t.quantity}</Label>
-                      <Input id="qty" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="mt-2 h-12 text-lg border-2" />
+                      <p className="text-xs text-green-600 font-medium mt-1 mb-2">
+                        🟢 {language === 'fr' ? 'Choisissez la quantité souhaitée' : language === 'es' ? 'Elige la cantidad deseada' : 'Choose your desired quantity'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(q => Math.max(1, (parseFloat(q) || 0) - 10).toString())}
+                          className="w-11 h-11 rounded-xl bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold text-xl shadow-md border-2 border-green-600 flex items-center justify-center transition-all select-none"
+                        >−</button>
+                        <Input
+                          id="qty"
+                          type="number"
+                          value={quantity}
+                          onChange={(e) => setQuantity(e.target.value)}
+                          className="h-11 text-lg font-bold border-2 border-green-400 focus:border-green-600 text-center w-full"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(q => ((parseFloat(q) || 0) + 10).toString())}
+                          className="w-11 h-11 rounded-xl bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold text-xl shadow-md border-2 border-green-600 flex items-center justify-center transition-all select-none"
+                        >+</button>
+                      </div>
+                      <div className="flex gap-1 mt-2 flex-wrap">
+                        {[50, 100, 150, 200, 250].map(g => (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => setQuantity(g.toString())}
+                            className={`px-2 py-1 rounded-lg text-xs font-semibold border-2 transition-all ${
+                              quantity === g.toString()
+                                ? 'bg-green-500 text-white border-green-600 shadow'
+                                : 'bg-white text-green-700 border-green-300 hover:bg-green-50'
+                            }`}
+                          >{g}g</button>
+                        ))}
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <p className="text-base font-semibold text-gray-700">{t.totalsFor} {quantity}{t.grams}</p>
