@@ -85,6 +85,11 @@ interface Translations {
   guideStep3Desc: string
   guideStep4Title: string
   guideStep4Desc: string
+  today: string
+  yesterday: string
+  noMealsThisDay: string
+  startAddingThisDay: string
+  mealsOfDate: string
 }
 
 const translations: Record<Language, Translations> = {
@@ -172,7 +177,12 @@ const translations: Record<Language, Translations> = {
     guideStep3Title: 'Visualize Your Progress',
     guideStep3Desc: 'See your weekly trends with beautiful charts and stay motivated.',
     guideStep4Title: 'Add Photos',
-    guideStep4Desc: 'Capture your meals with photos to keep a visual diary of your nutrition journey.'
+    guideStep4Desc: 'Capture your meals with photos to keep a visual diary of your nutrition journey.',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    noMealsThisDay: 'No meals recorded this day',
+    startAddingThisDay: 'No data for this day',
+    mealsOfDate: 'Meals of'
   },
   fr: {
     title: 'Calorie Tracker Pro',
@@ -258,7 +268,12 @@ const translations: Record<Language, Translations> = {
     guideStep3Title: 'Visualisez Vos Progrès',
     guideStep3Desc: 'Consultez vos tendances hebdomadaires avec de beaux graphiques.',
     guideStep4Title: 'Ajoutez des Photos',
-    guideStep4Desc: 'Capturez vos repas en photo pour garder un journal visuel de votre nutrition.'
+    guideStep4Desc: 'Capturez vos repas en photo pour garder un journal visuel de votre nutrition.',
+    today: "Aujourd'hui",
+    yesterday: 'Hier',
+    noMealsThisDay: 'Aucun repas enregistré ce jour',
+    startAddingThisDay: 'Pas de données pour ce jour',
+    mealsOfDate: 'Repas du'
   },
   es: {
     title: 'Calorie Tracker Pro',
@@ -344,7 +359,12 @@ const translations: Record<Language, Translations> = {
     guideStep3Title: 'Visualiza Tu Progreso',
     guideStep3Desc: 'Observa tus tendencias semanales con hermosos gráficos.',
     guideStep4Title: 'Agrega Fotos',
-    guideStep4Desc: 'Captura tus comidas con fotos para llevar un diario visual de tu nutrición.'
+    guideStep4Desc: 'Captura tus comidas con fotos para llevar un diario visual de tu nutrición.',
+    today: 'Hoy',
+    yesterday: 'Ayer',
+    noMealsThisDay: 'No hay comidas registradas este día',
+    startAddingThisDay: 'No hay datos para este día',
+    mealsOfDate: 'Comidas del'
   }
 }
 
