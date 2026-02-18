@@ -781,16 +781,16 @@ export default function Home() {
                 </Button>
               ))}
             </div>
-            <Button variant="outline" size="icon" onClick={() => setShowCharts(true)} className="border-2 hover:border-indigo-400">
+            <Button variant="outline" size="icon" onClick={() => setShowCharts(true)} className="border-2 hover:border-indigo-400" title={language === 'fr' ? 'Graphiques & Progrès' : language === 'es' ? 'Gráficos & Progreso' : 'Charts & Progress'}>
               <TrendingUp className="w-5 h-5" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => setShowBackup(true)} className="border-2 hover:border-green-400 hover:text-green-600" title="Sauvegarde / Restauration">
+            <Button variant="outline" size="icon" onClick={() => setShowBackup(true)} className="border-2 hover:border-green-400 hover:text-green-600" title={language === 'fr' ? 'Sauvegarde & Restauration' : language === 'es' ? 'Copia de seguridad' : 'Backup & Restore'}>
               <ShieldCheck className="w-5 h-5" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => setShowProfile(true)} className="border-2 hover:border-indigo-400">
+            <Button variant="outline" size="icon" onClick={() => setShowProfile(true)} className="border-2 hover:border-indigo-400" title={language === 'fr' ? 'Mon Profil' : language === 'es' ? 'Mi Perfil' : 'My Profile'}>
               <User className="w-5 h-5" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => setShowGuide(true)} className="border-2 hover:border-indigo-400">
+            <Button variant="outline" size="icon" onClick={() => setShowGuide(true)} className="border-2 hover:border-indigo-400" title={language === 'fr' ? 'Guide d\'utilisation' : language === 'es' ? 'Guía de uso' : 'User Guide'}>
               <Info className="w-5 h-5" />
             </Button>
           </div>
