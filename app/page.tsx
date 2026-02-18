@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Trash2, UtensilsCrossed, User, Settings, Info, X, Camera, Upload, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, UtensilsCrossed, User, Settings, Info, X, Camera, Upload, TrendingUp, ChevronLeft, ChevronRight, Download, UploadCloud, ShieldCheck } from 'lucide-react'
 import { getFoodDatabase, getCategories, type Food } from '@/lib/foodDatabase'
 import { useTranslation, type Language } from '@/lib/translations'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -126,6 +126,7 @@ export default function Home() {
   const [showProfile, setShowProfile] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
   const [showCharts, setShowCharts] = useState(false)
+  const [showBackup, setShowBackup] = useState(false)
   const [hasProfile, setHasProfile] = useState(false)
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null)
   const [loadedPhotos, setLoadedPhotos] = useState<Map<string, string>>(new Map())
@@ -170,7 +171,7 @@ export default function Home() {
           const date = key.replace('meals_', '')
           try {
             const raw = safeLocalStorageGet(key)
-            if (raw) allDays[date] = JSON.parse(raw)
+            if (raw) allDays[date] = validateAndFilterMeals(JSON.parse(raw))
           } catch (e) {
             console.error(`❌ Impossible de parser les repas du ${date}`, e)
           }
@@ -287,6 +288,108 @@ export default function Home() {
       reader.readAsDataURL(file)
     })
   }, [])
+
+  // ─── Validation des données ────────────────────────────────────────────
+  const isValidMeal = (meal: any): meal is Meal => {
+    return (
+      meal &&
+      typeof meal.id === 'string' &&
+      typeof meal.quantity === 'number' && meal.quantity > 0 &&
+      typeof meal.time === 'string' &&
+      meal.food &&
+      typeof meal.food.name === 'string' &&
+      typeof meal.food.calories === 'number' &&
+      typeof meal.food.protein === 'number' &&
+      typeof meal.food.carbs === 'number' &&
+      typeof meal.food.fat === 'number'
+    )
+  }
+
+  const validateAndFilterMeals = (meals: any[]): Meal[] => {
+    if (!Array.isArray(meals)) return []
+    return meals.filter(m => {
+      const valid = isValidMeal(m)
+      if (!valid) console.warn('⚠️ Repas corrompu ignoré:', m)
+      return valid
+    })
+  }
+
+  // ─── Export JSON ───────────────────────────────────────────────────────
+  const exportData = () => {
+    const backup = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      profile: profile,
+      language: language,
+      allDaysData: allDaysData,
+      historyData: historyData
+    }
+    const json = JSON.stringify(backup, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `calcal-backup-${formatDate(new Date())}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // ─── Import JSON ───────────────────────────────────────────────────────
+  const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const raw = event.target?.result as string
+        const backup = JSON.parse(raw)
+
+        // Validation de la structure du fichier
+        if (!backup.version || !backup.exportDate) {
+          alert(language === 'fr' ? '❌ Fichier invalide : ce n\'est pas un fichier CalCal.' : '❌ Invalid file: this is not a CalCal backup.')
+          return
+        }
+
+        // Valider et nettoyer les repas de chaque jour
+        const cleanedDays: Record<string, Meal[]> = {}
+        if (backup.allDaysData && typeof backup.allDaysData === 'object') {
+          Object.entries(backup.allDaysData).forEach(([date, meals]) => {
+            const cleaned = validateAndFilterMeals(meals as any[])
+            if (cleaned.length > 0) cleanedDays[date] = cleaned
+          })
+        }
+
+        // Valider le profil
+        if (backup.profile && typeof backup.profile.age === 'number') {
+          setProfile(backup.profile)
+          safeLocalStorageSet('userProfile', JSON.stringify(backup.profile))
+          setHasProfile(true)
+        }
+
+        if (backup.language) {
+          setLanguage(backup.language)
+          safeLocalStorageSet('language', backup.language)
+        }
+
+        setAllDaysData(cleanedDays)
+        isDataLoaded.current = true
+
+        const totalMeals = Object.values(cleanedDays).reduce((acc, m) => acc + m.length, 0)
+        const msg = language === 'fr'
+          ? `✅ Restauration réussie !\n${Object.keys(cleanedDays).length} jours et ${totalMeals} repas importés.`
+          : `✅ Restore successful!\n${Object.keys(cleanedDays).length} days and ${totalMeals} meals imported.`
+        alert(msg)
+        setShowBackup(false)
+      } catch (err) {
+        alert(language === 'fr' ? '❌ Fichier corrompu ou illisible.' : '❌ Corrupted or unreadable file.')
+        console.error('Import error:', err)
+      }
+    }
+    reader.readAsText(file)
+    // Reset input pour pouvoir réimporter le même fichier si besoin
+    e.target.value = ''
+  }
 
   const calculateDailyCalories = (profile: UserProfile) => {
     const { age, weight, height, gender, activityLevel, goal } = profile
@@ -571,6 +674,94 @@ export default function Home() {
 
       <div className="container mx-auto px-4 py-6 max-w-7xl">
 
+        {/* ── Modal Sauvegarde / Restauration ── */}
+        {showBackup && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <Card className="max-w-md w-full border-2 border-green-300 shadow-2xl">
+              <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-2xl text-gray-900 flex items-center gap-2">
+                      <ShieldCheck className="w-6 h-6 text-green-600" />
+                      {language === 'fr' ? 'Sauvegarde & Restauration' : language === 'es' ? 'Copia de seguridad' : 'Backup & Restore'}
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1">
+                      {language === 'fr' ? 'Protégez vos données contre toute perte' : language === 'es' ? 'Proteja sus datos' : 'Protect your data against any loss'}
+                    </CardDescription>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setShowBackup(false)} className="hover:bg-green-100">
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-5 pt-6">
+
+                {/* Export */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-blue-500 p-2 rounded-lg">
+                      <Download className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900">
+                        {language === 'fr' ? '📤 Exporter mes données' : language === 'es' ? '📤 Exportar datos' : '📤 Export my data'}
+                      </h3>
+                      <p className="text-xs text-gray-600 mt-1 mb-3">
+                        {language === 'fr'
+                          ? 'Télécharge un fichier .json avec tous tes repas, ton profil et ton historique. Garde-le en lieu sûr !'
+                          : language === 'es'
+                          ? 'Descarga un archivo .json con todas tus comidas y perfil.'
+                          : 'Downloads a .json file with all your meals, profile and history. Keep it safe!'}
+                      </p>
+                      <Button onClick={exportData} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                        <Download className="w-4 h-4 mr-2" />
+                        {language === 'fr' ? `Télécharger la sauvegarde` : language === 'es' ? 'Descargar copia' : 'Download backup'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Import */}
+                <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border-2 border-orange-200">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-orange-500 p-2 rounded-lg">
+                      <UploadCloud className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900">
+                        {language === 'fr' ? '📥 Restaurer mes données' : language === 'es' ? '📥 Restaurar datos' : '📥 Restore my data'}
+                      </h3>
+                      <p className="text-xs text-gray-600 mt-1 mb-3">
+                        {language === 'fr'
+                          ? '⚠️ Attention : restaurer remplacera toutes tes données actuelles par celles du fichier.'
+                          : language === 'es'
+                          ? '⚠️ Atención: restaurar reemplazará todos los datos actuales.'
+                          : '⚠️ Warning: restoring will replace all your current data with the file\'s data.'}
+                      </p>
+                      <label className="w-full cursor-pointer">
+                        <div className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                          <UploadCloud className="w-4 h-4" />
+                          {language === 'fr' ? 'Choisir un fichier de sauvegarde' : language === 'es' ? 'Elegir archivo' : 'Choose backup file'}
+                        </div>
+                        <input type="file" accept=".json" onChange={importData} className="hidden" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info */}
+                <p className="text-xs text-center text-gray-500">
+                  {language === 'fr'
+                    ? '💡 Conseil : faites une sauvegarde régulièrement, par exemple chaque semaine.'
+                    : language === 'es'
+                    ? '💡 Consejo: haga una copia de seguridad regularmente.'
+                    : '💡 Tip: make a backup regularly, for example every week.'}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* ── Header ── */}
         <div className="flex items-center justify-between mb-8 bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-lg border-2 border-indigo-200">
           <div className="flex items-center gap-4">
@@ -592,6 +783,9 @@ export default function Home() {
             </div>
             <Button variant="outline" size="icon" onClick={() => setShowCharts(true)} className="border-2 hover:border-indigo-400">
               <TrendingUp className="w-5 h-5" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setShowBackup(true)} className="border-2 hover:border-green-400 hover:text-green-600" title="Sauvegarde / Restauration">
+              <ShieldCheck className="w-5 h-5" />
             </Button>
             <Button variant="outline" size="icon" onClick={() => setShowProfile(true)} className="border-2 hover:border-indigo-400">
               <User className="w-5 h-5" />
