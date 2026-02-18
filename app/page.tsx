@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -40,19 +40,16 @@ interface UserProfile {
   goal: 'lose' | 'maintain' | 'gain'
 }
 
-// Helper: format date as YYYY-MM-DD
 function formatDate(date: Date): string {
   return date.toISOString().split('T')[0]
 }
 
-// Helper: get date N days ago
 function getDateOffset(offset: number): string {
   const d = new Date()
   d.setDate(d.getDate() + offset)
   return formatDate(d)
 }
 
-// Helper: format display date (short)
 function formatDisplayDate(dateStr: string, language: Language): string {
   const date = new Date(dateStr + 'T12:00:00')
   return date.toLocaleDateString(
@@ -61,7 +58,31 @@ function formatDisplayDate(dateStr: string, language: Language): string {
   )
 }
 
+// ✅ Helper sécurisé pour localStorage (évite les crashes si quota dépassé ou accès refusé)
+function safeLocalStorageSet(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value)
+    return true
+  } catch (e) {
+    console.error(`❌ localStorage.setItem("${key}") failed:`, e)
+    return false
+  }
+}
+
+function safeLocalStorageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch (e) {
+    console.error(`❌ localStorage.getItem("${key}") failed:`, e)
+    return null
+  }
+}
+
 export default function Home() {
+
+  // ✅ FIX CRITIQUE: Flag qui indique que le chargement initial est terminé
+  // Sans ce flag, le useEffect de sauvegarde peut écraser localStorage avec des données vides
+  const isDataLoaded = useRef(false)
 
   // Initialiser les images d'aliments au premier lancement
   useEffect(() => {
@@ -86,22 +107,18 @@ export default function Home() {
 
   const today = formatDate(new Date())
 
-  // ─── Navigation par jour ───────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState<string>(today)
   const isToday = selectedDate === today
 
-  // ─── Données tous les jours (historique complet) ───────────────────────
   const [allDaysData, setAllDaysData] = useState<Record<string, Meal[]>>({})
   const [historyData, setHistoryData] = useState<DayData[]>([])
 
-  // Repas du jour sélectionné
   const meals = allDaysData[selectedDate] || []
 
   const setMealsForDate = useCallback((date: string, newMeals: Meal[]) => {
     setAllDaysData(prev => ({ ...prev, [date]: newMeals }))
   }, [])
 
-  // ─── Autres états ──────────────────────────────────────────────────────
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFood, setSelectedFood] = useState<Food | null>(null)
@@ -125,36 +142,44 @@ export default function Home() {
   // ─── Chargement initial ────────────────────────────────────────────────
   useEffect(() => {
     const loadData = async () => {
-      const savedProfile = localStorage.getItem('userProfile')
-      const savedLanguage = localStorage.getItem('language')
-      const savedHistory = localStorage.getItem('weekHistory')
-      const hasSeenGuide = localStorage.getItem('hasSeenGuide')
+      const savedProfile = safeLocalStorageGet('userProfile')
+      const savedLanguage = safeLocalStorageGet('language')
+      const savedHistory = safeLocalStorageGet('weekHistory')
+      const hasSeenGuide = safeLocalStorageGet('hasSeenGuide')
 
       if (savedLanguage) setLanguage(savedLanguage as Language)
 
       if (savedProfile) {
-        setProfile(JSON.parse(savedProfile))
-        setHasProfile(true)
-        if (!hasSeenGuide) setShowGuide(true)
+        try {
+          setProfile(JSON.parse(savedProfile))
+          setHasProfile(true)
+          if (!hasSeenGuide) setShowGuide(true)
+        } catch (e) {
+          console.error('❌ Impossible de parser le profil sauvegardé', e)
+          setShowProfile(true)
+        }
       } else {
         setShowProfile(true)
       }
 
-      // Charger TOUS les jours depuis localStorage
+      // ✅ Charger TOUS les jours depuis localStorage
       const allDays: Record<string, Meal[]> = {}
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
         if (key && key.startsWith('meals_')) {
           const date = key.replace('meals_', '')
           try {
-            allDays[date] = JSON.parse(localStorage.getItem(key) || '[]')
-          } catch {}
+            const raw = safeLocalStorageGet(key)
+            if (raw) allDays[date] = JSON.parse(raw)
+          } catch (e) {
+            console.error(`❌ Impossible de parser les repas du ${date}`, e)
+          }
         }
       }
 
-      // Compatibilité: ancien format todayMeals
-      const savedMeals = localStorage.getItem('todayMeals')
-      const savedDate = localStorage.getItem('mealsDate')
+      // Compatibilité avec l'ancien format
+      const savedMeals = safeLocalStorageGet('todayMeals')
+      const savedDate = safeLocalStorageGet('mealsDate')
       if (savedMeals && savedDate && !allDays[savedDate]) {
         try {
           allDays[savedDate] = JSON.parse(savedMeals)
@@ -163,7 +188,7 @@ export default function Home() {
 
       setAllDaysData(allDays)
 
-      // Charger les photos
+      // Charger les photos depuis IndexedDB
       const allMeals = Object.values(allDays).flat()
       const photoIds = allMeals.filter(m => m.photoId).map(m => m.photoId!)
       if (photoIds.length > 0) {
@@ -175,7 +200,17 @@ export default function Home() {
         }
       }
 
-      if (savedHistory) setHistoryData(JSON.parse(savedHistory))
+      if (savedHistory) {
+        try {
+          setHistoryData(JSON.parse(savedHistory))
+        } catch (e) {
+          console.error('❌ Impossible de parser l\'historique', e)
+        }
+      }
+
+      // ✅ FIX CRITIQUE: On marque les données comme chargées APRÈS tout le processus
+      // Cela permet au useEffect de sauvegarde de s'exécuter en sécurité
+      isDataLoaded.current = true
     }
 
     loadData()
@@ -183,14 +218,16 @@ export default function Home() {
 
   // ─── Sauvegarde automatique quand les repas changent ──────────────────
   useEffect(() => {
-    if (Object.keys(allDaysData).length === 0) return
+    // ✅ FIX CRITIQUE: Ne pas sauvegarder avant que les données soient chargées
+    // Cela évite d'écraser localStorage avec un objet vide {} au premier render
+    if (!isDataLoaded.current) return
 
     // Sauvegarder chaque jour séparément
     Object.entries(allDaysData).forEach(([date, dayMeals]) => {
-      localStorage.setItem(`meals_${date}`, JSON.stringify(dayMeals))
+      safeLocalStorageSet(`meals_${date}`, JSON.stringify(dayMeals))
     })
 
-    // Mettre à jour l'historique pour les graphiques
+    // Mettre à jour l'historique
     const newHistory: DayData[] = Object.entries(allDaysData)
       .map(([date, dayMeals]) => {
         const totals = calculateTotals(dayMeals)
@@ -201,9 +238,9 @@ export default function Home() {
       .slice(0, 30)
 
     setHistoryData(newHistory)
-    localStorage.setItem('weekHistory', JSON.stringify(newHistory))
+    safeLocalStorageSet('weekHistory', JSON.stringify(newHistory))
 
-    // Nettoyage photos orphelines
+    // Nettoyage photos orphelines (en arrière-plan, sans bloquer)
     const validPhotoIds = Object.values(allDaysData).flat().filter(m => m.photoId).map(m => m.photoId!)
     dbManager.cleanupOrphanedPhotos(validPhotoIds).catch(console.error)
 
@@ -272,8 +309,6 @@ export default function Home() {
 
   const totals = calculateTotals(meals)
 
-  // ─── Navigation par jour ───────────────────────────────────────────────
-  // Générer les 7 derniers jours
   const last7Days = Array.from({ length: 7 }, (_, i) => getDateOffset(-(6 - i)))
 
   const navigateDay = (direction: 'prev' | 'next') => {
@@ -295,7 +330,6 @@ export default function Home() {
     return (allDaysData[dateStr] || []).length > 0
   }
 
-  // ─── Macros bar ────────────────────────────────────────────────────────
   const MacroBar = ({ label, current, target, color }: { label: string; current: number; target: number; color: string }) => (
     <div>
       <div className="flex justify-between mb-2">
@@ -308,9 +342,8 @@ export default function Home() {
     </div>
   )
 
-  // ─── Ajouter un repas ──────────────────────────────────────────────────
   const addMeal = async () => {
-    if (!isToday) return // On ne peut ajouter que pour aujourd'hui
+    if (!isToday) return
     if (selectedFood && quantity) {
       const mealId = Date.now().toString()
       let photoId: string | undefined = undefined
@@ -361,14 +394,14 @@ export default function Home() {
     if (profile.age < 1 || profile.age > 150) { alert('Please enter a valid age between 1 and 150'); return }
     if (profile.weight < 20 || profile.weight > 500) { alert('Please enter a valid weight between 20 and 500 kg'); return }
     if (profile.height < 50 || profile.height > 300) { alert('Please enter a valid height between 50 and 300 cm'); return }
-    try {
-      localStorage.setItem('userProfile', JSON.stringify(profile))
-      setHasProfile(true)
-      setShowProfile(false)
-      setShowGuide(true)
-    } catch (error) {
-      alert('Failed to save profile.')
+    const saved = safeLocalStorageSet('userProfile', JSON.stringify(profile))
+    if (!saved) {
+      alert('Échec de la sauvegarde du profil. Stockage insuffisant.')
+      return
     }
+    setHasProfile(true)
+    setShowProfile(false)
+    setShowGuide(true)
   }
 
   const filteredFoods = useMemo(() => {
@@ -434,7 +467,7 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <Button onClick={() => { setShowGuide(false); localStorage.setItem('hasSeenGuide', 'true') }} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-base font-semibold shadow-lg">
+              <Button onClick={() => { setShowGuide(false); safeLocalStorageSet('hasSeenGuide', 'true') }} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 h-12 text-base font-semibold shadow-lg">
                 {t.gotIt}
               </Button>
             </CardContent>
@@ -552,7 +585,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <div className="flex gap-2">
               {(['en', 'fr', 'es'] as Language[]).map(lang => (
-                <Button key={lang} variant={language === lang ? 'default' : 'outline'} onClick={() => { setLanguage(lang); localStorage.setItem('language', lang) }} size="sm" className={language === lang ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
+                <Button key={lang} variant={language === lang ? 'default' : 'outline'} onClick={() => { setLanguage(lang); safeLocalStorageSet('language', lang) }} size="sm" className={language === lang ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-2'}>
                   {lang === 'en' ? '🇺🇸' : lang === 'fr' ? '🇫🇷' : '🇪🇸'} {t[lang]}
                 </Button>
               ))}
@@ -599,9 +632,7 @@ export default function Home() {
                     <span className="text-xs font-medium">{getDayLabel(date)}</span>
                     {hasData && (
                       <span className={`mt-1 w-2.5 h-2.5 rounded-full shadow-sm ${
-                        isSelected
-                          ? 'bg-green-300 shadow-green-300/50'
-                          : 'bg-green-500 shadow-green-500/50'
+                        isSelected ? 'bg-green-300 shadow-green-300/50' : 'bg-green-500 shadow-green-500/50'
                       }`}
                       style={{ boxShadow: isSelected ? '0 0 6px 2px rgba(134,239,172,0.7)' : '0 0 6px 2px rgba(34,197,94,0.6)' }}
                       />
@@ -623,7 +654,6 @@ export default function Home() {
             </Button>
           </div>
 
-          {/* Label du jour sélectionné */}
           <div className="text-center text-sm font-semibold text-indigo-700">
             {isToday ? `📅 ${t.today}` : `📅 ${formatDisplayDate(selectedDate, language)}`}
             {!isToday && <span className="ml-2 text-xs text-gray-500">(lecture seule)</span>}
