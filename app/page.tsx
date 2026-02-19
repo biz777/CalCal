@@ -712,15 +712,15 @@ export default function Home() {
             <CardContent className="space-y-6 pt-6">
               <div className="space-y-4">
                 {[
-                  { num: 1, color: 'blue', title: t.guideStep1Title, desc: t.guideStep1Desc },
-                  { num: 2, color: 'green', title: t.guideStep2Title, desc: t.guideStep2Desc },
-                  { num: 3, color: 'yellow', title: t.guideStep3Title, desc: t.guideStep3Desc },
-                  { num: 4, color: 'indigo', title: t.guideStep4Title, desc: t.guideStep4Desc },
-                  { num: 5, color: 'purple', title: t.guideStep5Title, desc: t.guideStep5Desc },
-                  { num: 6, color: 'orange', title: t.guideStep6Title, desc: t.guideStep6Desc },
+                  { num: 1, bg: 'bg-gradient-to-br from-blue-50 to-blue-100', border: 'border-blue-200', circle: 'bg-blue-500', title: t.guideStep1Title, desc: t.guideStep1Desc },
+                  { num: 2, bg: 'bg-gradient-to-br from-green-50 to-green-100', border: 'border-green-200', circle: 'bg-green-500', title: t.guideStep2Title, desc: t.guideStep2Desc },
+                  { num: 3, bg: 'bg-gradient-to-br from-yellow-50 to-yellow-100', border: 'border-yellow-200', circle: 'bg-yellow-500', title: t.guideStep3Title, desc: t.guideStep3Desc },
+                  { num: 4, bg: 'bg-gradient-to-br from-indigo-50 to-indigo-100', border: 'border-indigo-200', circle: 'bg-indigo-500', title: t.guideStep4Title, desc: t.guideStep4Desc },
+                  { num: 5, bg: 'bg-gradient-to-br from-purple-50 to-purple-100', border: 'border-purple-200', circle: 'bg-purple-500', title: t.guideStep5Title, desc: t.guideStep5Desc },
+                  { num: 6, bg: 'bg-gradient-to-br from-orange-50 to-orange-100', border: 'border-orange-200', circle: 'bg-orange-500', title: t.guideStep6Title, desc: t.guideStep6Desc },
                 ].map(step => (
-                  <div key={step.num} className={`flex gap-4 items-start p-4 bg-gradient-to-br from-${step.color}-50 to-${step.color}-100 rounded-lg border-2 border-${step.color}-200`}>
-                    <div className={`bg-${step.color}-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0`}>{step.num}</div>
+                  <div key={step.num} className={`flex gap-4 items-start p-4 ${step.bg} rounded-lg border-2 ${step.border}`}>
+                    <div className={`${step.circle} text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0`}>{step.num}</div>
                     <div>
                       <h4 className="font-bold text-lg text-gray-900 mb-1">{step.title}</h4>
                       <p className="text-gray-700 leading-relaxed">{step.desc}</p>
