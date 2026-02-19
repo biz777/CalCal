@@ -5,12 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Trash2, UtensilsCrossed, User, Info, X, Camera, TrendingUp, ChevronLeft, ChevronRight, Download, UploadCloud, ShieldCheck, Star, ChefHat, CheckSquare, Square } from 'lucide-react'
+import { Plus, Trash2, UtensilsCrossed, User, Info, X, Camera, TrendingUp, ChevronLeft, ChevronRight, Download, UploadCloud, ShieldCheck, Star, ChefHat } from 'lucide-react'
 import { getFoodDatabase, getCategories, type Food } from '@/lib/foodDatabase'
 import { useTranslation, type Language } from '@/lib/translations'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useDropzone } from 'react-dropzone'
-import Image from 'next/image'
 import dbManager from '@/lib/indexedDB'
 import { FoodImage } from '@/components/FoodImage'
 
@@ -139,7 +138,6 @@ export default function Home() {
   const [showGuide, setShowGuide] = useState(false)
   const [showCharts, setShowCharts] = useState(false)
   const [showBackup, setShowBackup] = useState(false)
-  const [hasProfile, setHasProfile] = useState(false)
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null)
   const [loadedPhotos, setLoadedPhotos] = useState<Map<string, string>>(new Map())
 
@@ -186,7 +184,6 @@ export default function Home() {
       if (savedProfile) {
         try {
           setProfile(JSON.parse(savedProfile))
-          setHasProfile(true)
           if (!hasSeenGuide) setShowGuide(true)
         } catch (e) {
           console.error('❌ Impossible de parser le profil sauvegardé', e)
@@ -407,7 +404,6 @@ export default function Home() {
         if (backup.profile && typeof backup.profile.age === 'number') {
           setProfile(backup.profile)
           safeLocalStorageSet('userProfile', JSON.stringify(backup.profile))
-          setHasProfile(true)
         }
 
         if (backup.language) {
@@ -431,6 +427,8 @@ export default function Home() {
         const totalMeals = Object.values(cleanedDays).reduce((acc, m) => acc + m.length, 0)
         const msg = language === 'fr'
           ? `✅ Restauration réussie !\n${Object.keys(cleanedDays).length} jours et ${totalMeals} repas importés.`
+          : language === 'es'
+          ? `✅ Restauración exitosa!\n${Object.keys(cleanedDays).length} días y ${totalMeals} comidas importadas.`
           : `✅ Restore successful!\n${Object.keys(cleanedDays).length} days and ${totalMeals} meals imported.`
         alert(msg)
         setShowBackup(false)
@@ -470,8 +468,12 @@ export default function Home() {
     const currentIndex = last7Days.indexOf(selectedDate)
     if (direction === 'prev' && currentIndex > 0) {
       setSelectedDate(last7Days[currentIndex - 1])
+      setSelectionMode(false)
+      setSelectedMealIds(new Set())
     } else if (direction === 'next' && currentIndex < last7Days.length - 1) {
       setSelectedDate(last7Days[currentIndex + 1])
+      setSelectionMode(false)
+      setSelectedMealIds(new Set())
     }
   }
 
@@ -697,7 +699,7 @@ export default function Home() {
       {/* ── Guide ── */}
       {showGuide && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="max-w-2xl w-full border-2 border-indigo-300 shadow-2xl">
+          <Card className="max-w-2xl w-full border-2 border-indigo-300 shadow-2xl max-h-[90vh] flex flex-col">
             <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200">
               <div className="flex justify-between items-start">
                 <div>
@@ -709,7 +711,7 @@ export default function Home() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6 pt-6">
+            <CardContent className="space-y-6 pt-6 overflow-y-auto">
               <div className="space-y-4">
                 {[
                   { num: 1, bg: 'bg-gradient-to-br from-blue-50 to-blue-100', border: 'border-blue-200', circle: 'bg-blue-500', title: t.guideStep1Title, desc: t.guideStep1Desc },
@@ -1027,7 +1029,7 @@ export default function Home() {
                 return (
                   <button
                     key={date}
-                    onClick={() => setSelectedDate(date)}
+                    onClick={() => { setSelectedDate(date); setSelectionMode(false); setSelectedMealIds(new Set()) }}
                     className={`relative flex flex-col items-center px-3 py-2 rounded-xl transition-all min-w-[60px] ${
                       isSelected
                         ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
