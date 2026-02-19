@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Trash2, UtensilsCrossed, User, Settings, Info, X, Camera, Upload, TrendingUp, ChevronLeft, ChevronRight, Download, UploadCloud, ShieldCheck, Star, StarOff, ChefHat } from 'lucide-react'
+import { Plus, Trash2, UtensilsCrossed, User, Info, X, Camera, TrendingUp, ChevronLeft, ChevronRight, Download, UploadCloud, ShieldCheck, Star, ChefHat, CheckSquare, Square } from 'lucide-react'
 import { getFoodDatabase, getCategories, type Food } from '@/lib/foodDatabase'
 import { useTranslation, type Language } from '@/lib/translations'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -148,8 +148,9 @@ export default function Home() {
   const [showFavorites, setShowFavorites] = useState(false)
   const [showFavoriteModal, setShowFavoriteModal] = useState(false)
   const [favoriteName, setFavoriteName] = useState('')
-  const [mealToFavorite, setMealToFavorite] = useState<Meal | null>(null)
-  const [favoriteQuantities, setFavoriteQuantities] = useState<Record<string, number>>({})
+  const [selectedMealIds, setSelectedMealIds] = useState<Set<string>>(new Set())
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [favoriteMultipliers, setFavoriteMultipliers] = useState<Record<string, number>>({})
 
   // ── États Aliments Personnalisés ───────────────────────────────────────────
   const [customFoods, setCustomFoods] = useState<CustomFood[]>([])
@@ -588,28 +589,44 @@ export default function Home() {
     maxFiles: 1
   })
 
-  // ── Logique Favoris ────────────────────────────────────────────────────
+  // ── Logique Favoris (groupes) ──────────────────────────────────────────
 
-  const openFavoriteModal = (meal: Meal) => {
-    setMealToFavorite(meal)
-    setFavoriteName(meal.food.name)
+  const toggleSelectionMode = () => {
+    setSelectionMode(v => !v)
+    setSelectedMealIds(new Set())
+  }
+
+  const toggleMealSelection = (id: string) => {
+    setSelectedMealIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const openFavoriteModal = () => {
+    if (selectedMealIds.size === 0) return
+    const selectedNames = meals.filter(m => selectedMealIds.has(m.id)).map(m => m.food.name)
+    setFavoriteName(selectedNames.length === 1 ? selectedNames[0] : '')
     setShowFavoriteModal(true)
   }
 
   const saveFavorite = () => {
-    if (!mealToFavorite || !favoriteName.trim()) return
+    if (!favoriteName.trim() || selectedMealIds.size === 0) return
+    const selectedMeals = meals.filter(m => selectedMealIds.has(m.id))
     const newFavorite: FavoriteMeal = {
       id: Date.now().toString(),
       name: favoriteName.trim(),
-      meals: [mealToFavorite],
+      meals: selectedMeals,
       savedAt: new Date().toISOString()
     }
     const updated = [...favorites, newFavorite]
     setFavorites(updated)
     safeLocalStorageSet('calcal_favorites', JSON.stringify(updated))
     setShowFavoriteModal(false)
-    setMealToFavorite(null)
     setFavoriteName('')
+    setSelectedMealIds(new Set())
+    setSelectionMode(false)
   }
 
   const deleteFavorite = (id: string) => {
@@ -620,19 +637,19 @@ export default function Home() {
 
   const addFavoriteToJournal = (fav: FavoriteMeal) => {
     if (!isToday) return
+    const multiplier = favoriteMultipliers[fav.id] ?? 1
     const currentMeals = allDaysData[today] || []
     const newMeals = fav.meals.map(m => ({
       ...m,
       id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      quantity: favoriteQuantities[fav.id] ?? m.quantity,
+      quantity: Math.round(m.quantity * multiplier),
       time: new Date().toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
     }))
     setMealsForDate(today, [...currentMeals, ...newMeals])
   }
 
-  const isMealFavorite = (mealId: string) => {
-    return favorites.some(f => f.meals.some(m => m.id === mealId))
-  }
+  const MULTIPLIERS = [0.5, 0.75, 1, 1.5, 2]
+  const MULTIPLIER_LABELS = ['×½', '×¾', '×1', '×1.5', '×2']
 
   // ── Logique Aliments Personnalisés ─────────────────────────────────────
 
@@ -832,12 +849,15 @@ export default function Home() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
-              {mealToFavorite && (
-                <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200 text-sm text-gray-700">
-                  <span className="font-semibold">{mealToFavorite.food.name}</span>
-                  <span className="text-gray-500 ml-2">— {mealToFavorite.quantity}g · {Math.round(mealToFavorite.food.calories * mealToFavorite.quantity / 100)} kcal</span>
-                </div>
-              )}
+              {/* Aperçu des repas sélectionnés */}
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {meals.filter(m => selectedMealIds.has(m.id)).map(m => (
+                  <div key={m.id} className="p-2 bg-yellow-50 rounded-lg border border-yellow-200 text-sm text-gray-700 flex justify-between">
+                    <span className="font-semibold">{m.food.name}</span>
+                    <span className="text-gray-500">{m.quantity}g · {Math.round(m.food.calories * m.quantity / 100)} kcal</span>
+                  </div>
+                ))}
+              </div>
               <div>
                 <Label className="text-sm font-semibold">
                   {language === 'fr' ? 'Nom du favori' : language === 'es' ? 'Nombre del favorito' : 'Favorite name'}
@@ -856,7 +876,7 @@ export default function Home() {
                   <Star className="w-4 h-4 mr-2 fill-white" />
                   {language === 'fr' ? 'Sauvegarder' : language === 'es' ? 'Guardar' : 'Save'}
                 </Button>
-                <Button onClick={() => setShowFavoriteModal(false)} variant="outline" className="border-2 h-11">
+                <Button onClick={() => { setShowFavoriteModal(false) }} variant="outline" className="border-2 h-11">
                   {language === 'fr' ? 'Annuler' : language === 'es' ? 'Cancelar' : 'Cancel'}
                 </Button>
               </div>
@@ -1368,9 +1388,43 @@ export default function Home() {
         {/* ── Liste des repas ── */}
         <Card className="border-2 border-indigo-300 shadow-xl bg-white mb-6">
           <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50">
-            <CardTitle className="text-2xl text-gray-800">
-              {isToday ? `${t.mealsOfDay} (${meals.length})` : `${t.mealsOfDate} ${formatDisplayDate(selectedDate, language)} (${meals.length})`}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl text-gray-800">
+                {isToday ? `${t.mealsOfDay} (${meals.length})` : `${t.mealsOfDate} ${formatDisplayDate(selectedDate, language)} (${meals.length})`}
+              </CardTitle>
+              {/* ── Bouton mode sélection (seulement aujourd'hui et si repas présents) ── */}
+              {isToday && meals.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {selectionMode && selectedMealIds.size > 0 && (
+                    <Button
+                      onClick={openFavoriteModal}
+                      className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white font-semibold h-9 px-3 shadow text-sm"
+                    >
+                      <Star className="w-4 h-4 mr-1 fill-white" />
+                      {language === 'fr' ? `Sauvegarder (${selectedMealIds.size})` : language === 'es' ? `Guardar (${selectedMealIds.size})` : `Save (${selectedMealIds.size})`}
+                    </Button>
+                  )}
+                  <Button
+                    variant={selectionMode ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={toggleSelectionMode}
+                    className={selectionMode
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white h-9 font-semibold'
+                      : 'border-2 border-yellow-300 hover:border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-9 font-semibold gap-1'}
+                  >
+                    <Star className={`w-4 h-4 ${selectionMode ? '' : 'text-yellow-500'}`} />
+                    {selectionMode
+                      ? (language === 'fr' ? 'Annuler' : language === 'es' ? 'Cancelar' : 'Cancel')
+                      : (language === 'fr' ? 'Créer un favori' : language === 'es' ? 'Crear favorito' : 'Create favorite')}
+                  </Button>
+                </div>
+              )}
+            </div>
+            {selectionMode && (
+              <p className="text-sm text-indigo-600 font-medium mt-2">
+                {language === 'fr' ? '☑️ Sélectionnez les aliments à grouper en favori' : language === 'es' ? '☑️ Selecciona los alimentos a agrupar' : '☑️ Select the meals to group as a favorite'}
+              </p>
+            )}
           </CardHeader>
           <CardContent className="pt-6">
             {meals.length === 0 ? (
@@ -1384,9 +1438,27 @@ export default function Home() {
                 {meals.map((meal) => {
                   const multiplier = meal.quantity / 100
                   const photoUrl = meal.photoId ? loadedPhotos.get(meal.photoId) : undefined
-                  const alreadyFavorited = isMealFavorite(meal.id)
+                  const isSelected = selectedMealIds.has(meal.id)
                   return (
-                    <div key={meal.id} className="flex items-center gap-4 p-5 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all">
+                    <div
+                      key={meal.id}
+                      onClick={() => selectionMode && toggleMealSelection(meal.id)}
+                      className={`flex items-center gap-4 p-5 rounded-lg border-2 hover:shadow-md transition-all ${
+                        selectionMode ? 'cursor-pointer' : ''
+                      } ${
+                        isSelected
+                          ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-400 shadow-md'
+                          : 'bg-gradient-to-br from-white to-indigo-50 border-gray-200 hover:border-indigo-400'
+                      }`}
+                    >
+                      {/* Checkbox en mode sélection */}
+                      {selectionMode && (
+                        <div className={`flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                          isSelected ? 'bg-yellow-500 border-yellow-500' : 'border-gray-300 bg-white'
+                        }`}>
+                          {isSelected && <span className="text-white text-xs font-bold">✓</span>}
+                        </div>
+                      )}
                       {photoUrl && (
                         <div className="relative w-20 h-20 flex-shrink-0">
                           <img src={photoUrl} alt={meal.food.name} className="w-full h-full object-cover rounded-lg shadow" />
@@ -1404,24 +1476,8 @@ export default function Home() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-2xl font-bold text-indigo-600">{Math.round(meal.food.calories * multiplier)} {t.kcal}</span>
-                        {/* ── Bouton Favori ── */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => alreadyFavorited ? undefined : openFavoriteModal(meal)}
-                          title={alreadyFavorited
-                            ? (language === 'fr' ? 'Déjà en favori' : language === 'es' ? 'Ya es favorito' : 'Already a favorite')
-                            : (language === 'fr' ? 'Ajouter aux favoris' : language === 'es' ? 'Añadir a favoritos' : 'Add to favorites')}
-                          className={`border-2 border-transparent transition-all ${
-                            alreadyFavorited
-                              ? 'text-yellow-500 cursor-default'
-                              : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 hover:border-yellow-200'
-                          }`}
-                        >
-                          <Star className={`w-5 h-5 ${alreadyFavorited ? 'fill-yellow-500' : ''}`} />
-                        </Button>
-                        {isToday && (
-                          <Button variant="ghost" size="icon" onClick={() => deleteMeal(meal.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 border-2 border-transparent hover:border-red-200">
+                        {isToday && !selectionMode && (
+                          <Button variant="ghost" size="icon" onClick={e => { e.stopPropagation(); deleteMeal(meal.id) }} className="text-red-500 hover:text-red-700 hover:bg-red-50 border-2 border-transparent hover:border-red-200">
                             <Trash2 className="w-5 h-5" />
                           </Button>
                         )}
@@ -1474,14 +1530,14 @@ export default function Home() {
                     {language === 'fr' ? 'Aucun favori pour l\'instant' : language === 'es' ? 'Sin favoritos por ahora' : 'No favorites yet'}
                   </p>
                   <p className="text-sm mt-1">
-                    {language === 'fr' ? 'Cliquez sur ⭐ sur un repas pour l\'ajouter ici' : language === 'es' ? 'Haz clic en ⭐ en una comida para añadirla' : 'Click ⭐ on any meal to save it here'}
+                    {language === 'fr' ? 'Utilisez "Créer un favori" dans le journal pour en ajouter' : language === 'es' ? 'Usa "Crear favorito" en el diario para añadir' : 'Use "Create favorite" in the journal to add one'}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {favorites.map(fav => {
+                    const multiplier = favoriteMultipliers[fav.id] ?? 1
                     const favTotals = calculateTotals(fav.meals)
-                    const currentQty = favoriteQuantities[fav.id] ?? fav.meals[0]?.quantity ?? 100
                     return (
                       <div key={fav.id} className="p-4 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl border-2 border-yellow-200 hover:border-yellow-400 hover:shadow-md transition-all">
                         <div className="flex items-start gap-4">
@@ -1489,40 +1545,42 @@ export default function Home() {
                             <div className="flex items-center gap-2 mb-1">
                               <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 flex-shrink-0" />
                               <h4 className="font-bold text-gray-900">{fav.name}</h4>
+                              <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                                {fav.meals.length} {language === 'fr' ? 'aliment' : language === 'es' ? 'alimento' : 'item'}{fav.meals.length > 1 ? 's' : ''}
+                              </span>
                             </div>
-                            <p className="text-xs text-gray-500 mb-2">
-                              {fav.meals.map(m => m.food.name).join(', ')}
+                            <p className="text-xs text-gray-500 mb-3">
+                              {fav.meals.map(m => `${m.food.name} (${Math.round(m.quantity * multiplier)}g)`).join(' · ')}
                             </p>
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <span className="text-sm font-semibold text-indigo-600">
-                                {Math.round(favTotals.calories * (currentQty / (fav.meals[0]?.quantity || 100)))} kcal
+                            {/* Totaux avec multiplicateur */}
+                            <div className="flex items-center gap-3 flex-wrap mb-3">
+                              <span className="text-sm font-bold text-indigo-600">
+                                {Math.round(favTotals.calories * multiplier)} kcal
                               </span>
                               <span className="text-xs text-gray-500">
-                                P:{Math.round(favTotals.protein * (currentQty / (fav.meals[0]?.quantity || 100)))}g
-                                · C:{Math.round(favTotals.carbs * (currentQty / (fav.meals[0]?.quantity || 100)))}g
-                                · L:{Math.round(favTotals.fat * (currentQty / (fav.meals[0]?.quantity || 100)))}g
+                                P:{Math.round(favTotals.protein * multiplier)}g
+                                · C:{Math.round(favTotals.carbs * multiplier)}g
+                                · L:{Math.round(favTotals.fat * multiplier)}g
                               </span>
                             </div>
-                            {/* Sélecteur de quantité */}
-                            <div className="flex items-center gap-2 mt-3">
-                              <span className="text-xs font-semibold text-gray-600">
-                                {language === 'fr' ? 'Quantité :' : language === 'es' ? 'Cantidad:' : 'Quantity:'}
+                            {/* Sélecteur de portion ×0.5 / ×0.75 / ×1 / ×1.5 / ×2 */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-semibold text-gray-600 mr-1">
+                                {language === 'fr' ? 'Portion :' : language === 'es' ? 'Porción:' : 'Portion:'}
                               </span>
-                              <button
-                                onClick={() => setFavoriteQuantities(prev => ({...prev, [fav.id]: Math.max(1, (prev[fav.id] ?? fav.meals[0]?.quantity ?? 100) - 10)}))}
-                                className="w-7 h-7 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-white font-bold flex items-center justify-center text-sm"
-                              >−</button>
-                              <input
-                                type="number"
-                                value={currentQty}
-                                onChange={e => setFavoriteQuantities(prev => ({...prev, [fav.id]: Math.max(1, Number(e.target.value))}))}
-                                className="w-16 h-7 text-center text-sm font-bold border-2 border-yellow-300 rounded-lg focus:border-yellow-500 outline-none"
-                              />
-                              <button
-                                onClick={() => setFavoriteQuantities(prev => ({...prev, [fav.id]: (prev[fav.id] ?? fav.meals[0]?.quantity ?? 100) + 10}))}
-                                className="w-7 h-7 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-white font-bold flex items-center justify-center text-sm"
-                              >+</button>
-                              <span className="text-xs text-gray-500">{t.grams}</span>
+                              {MULTIPLIERS.map((m, i) => (
+                                <button
+                                  key={m}
+                                  onClick={() => setFavoriteMultipliers(prev => ({...prev, [fav.id]: m}))}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border-2 transition-all ${
+                                    multiplier === m
+                                      ? 'bg-yellow-500 text-white border-yellow-600 shadow'
+                                      : 'bg-white text-yellow-700 border-yellow-300 hover:bg-yellow-50'
+                                  }`}
+                                >
+                                  {MULTIPLIER_LABELS[i]}
+                                </button>
+                              ))}
                             </div>
                           </div>
                           <div className="flex flex-col gap-2">
