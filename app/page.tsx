@@ -714,8 +714,10 @@ export default function Home() {
                 {[
                   { num: 1, color: 'blue', title: t.guideStep1Title, desc: t.guideStep1Desc },
                   { num: 2, color: 'green', title: t.guideStep2Title, desc: t.guideStep2Desc },
-                  { num: 3, color: 'purple', title: t.guideStep3Title, desc: t.guideStep3Desc },
-                  { num: 4, color: 'orange', title: t.guideStep4Title, desc: t.guideStep4Desc },
+                  { num: 3, color: 'yellow', title: t.guideStep3Title, desc: t.guideStep3Desc },
+                  { num: 4, color: 'indigo', title: t.guideStep4Title, desc: t.guideStep4Desc },
+                  { num: 5, color: 'purple', title: t.guideStep5Title, desc: t.guideStep5Desc },
+                  { num: 6, color: 'orange', title: t.guideStep6Title, desc: t.guideStep6Desc },
                 ].map(step => (
                   <div key={step.num} className={`flex gap-4 items-start p-4 bg-gradient-to-br from-${step.color}-50 to-${step.color}-100 rounded-lg border-2 border-${step.color}-200`}>
                     <div className={`bg-${step.color}-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0`}>{step.num}</div>
