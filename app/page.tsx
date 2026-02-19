@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Trash2, UtensilsCrossed, User, Settings, Info, X, Camera, Upload, TrendingUp, ChevronLeft, ChevronRight, Download, UploadCloud, ShieldCheck } from 'lucide-react'
+import { Plus, Trash2, UtensilsCrossed, User, Settings, Info, X, Camera, Upload, TrendingUp, ChevronLeft, ChevronRight, Download, UploadCloud, ShieldCheck, Star, StarOff, ChefHat } from 'lucide-react'
 import { getFoodDatabase, getCategories, type Food } from '@/lib/foodDatabase'
 import { useTranslation, type Language } from '@/lib/translations'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -40,6 +40,22 @@ interface UserProfile {
   goal: 'lose' | 'maintain' | 'gain'
 }
 
+// ── Nouveaux types ─────────────────────────────────────────────────────────────
+
+interface FavoriteMeal {
+  id: string
+  name: string
+  meals: Meal[]
+  savedAt: string
+}
+
+interface CustomFood extends Food {
+  isCustom: true
+  createdAt: string
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+
 function formatDate(date: Date): string {
   return date.toISOString().split('T')[0]
 }
@@ -58,7 +74,6 @@ function formatDisplayDate(dateStr: string, language: Language): string {
   )
 }
 
-// ✅ Helper sécurisé pour localStorage (évite les crashes si quota dépassé ou accès refusé)
 function safeLocalStorageSet(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value)
@@ -80,11 +95,8 @@ function safeLocalStorageGet(key: string): string | null {
 
 export default function Home() {
 
-  // ✅ FIX CRITIQUE: Flag qui indique que le chargement initial est terminé
-  // Sans ce flag, le useEffect de sauvegarde peut écraser localStorage avec des données vides
   const isDataLoaded = useRef(false)
 
-  // Initialiser les images d'aliments au premier lancement
   useEffect(() => {
     const initFoodImages = async () => {
       try {
@@ -131,6 +143,26 @@ export default function Home() {
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null)
   const [loadedPhotos, setLoadedPhotos] = useState<Map<string, string>>(new Map())
 
+  // ── États Favoris ──────────────────────────────────────────────────────────
+  const [favorites, setFavorites] = useState<FavoriteMeal[]>([])
+  const [showFavorites, setShowFavorites] = useState(false)
+  const [showFavoriteModal, setShowFavoriteModal] = useState(false)
+  const [favoriteName, setFavoriteName] = useState('')
+  const [mealToFavorite, setMealToFavorite] = useState<Meal | null>(null)
+  const [favoriteQuantities, setFavoriteQuantities] = useState<Record<string, number>>({})
+
+  // ── États Aliments Personnalisés ───────────────────────────────────────────
+  const [customFoods, setCustomFoods] = useState<CustomFood[]>([])
+  const [showCustomFoodForm, setShowCustomFoodForm] = useState(false)
+  const [newCustomFood, setNewCustomFood] = useState({
+    name: '',
+    calories: '',
+    protein: '',
+    carbs: '',
+    fat: '',
+    category: ''
+  })
+
   const [profile, setProfile] = useState<UserProfile>({
     age: 30,
     weight: 70,
@@ -163,7 +195,7 @@ export default function Home() {
         setShowProfile(true)
       }
 
-      // ✅ Charger TOUS les jours depuis localStorage
+      // Charger TOUS les jours
       const allDays: Record<string, Meal[]> = {}
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
@@ -178,7 +210,6 @@ export default function Home() {
         }
       }
 
-      // Compatibilité avec l'ancien format
       const savedMeals = safeLocalStorageGet('todayMeals')
       const savedDate = safeLocalStorageGet('mealsDate')
       if (savedMeals && savedDate && !allDays[savedDate]) {
@@ -189,7 +220,7 @@ export default function Home() {
 
       setAllDaysData(allDays)
 
-      // Charger les photos depuis IndexedDB
+      // Charger photos
       const allMeals = Object.values(allDays).flat()
       const photoIds = allMeals.filter(m => m.photoId).map(m => m.photoId!)
       if (photoIds.length > 0) {
@@ -209,26 +240,40 @@ export default function Home() {
         }
       }
 
-      // ✅ FIX CRITIQUE: On marque les données comme chargées APRÈS tout le processus
-      // Cela permet au useEffect de sauvegarde de s'exécuter en sécurité
+      // ── Charger Favoris ──────────────────────────────────────────────────
+      const savedFavorites = safeLocalStorageGet('calcal_favorites')
+      if (savedFavorites) {
+        try {
+          setFavorites(JSON.parse(savedFavorites))
+        } catch (e) {
+          console.error('❌ Impossible de parser les favoris', e)
+        }
+      }
+
+      // ── Charger Aliments Personnalisés ───────────────────────────────────
+      const savedCustomFoods = safeLocalStorageGet('calcal_custom_foods')
+      if (savedCustomFoods) {
+        try {
+          setCustomFoods(JSON.parse(savedCustomFoods))
+        } catch (e) {
+          console.error('❌ Impossible de parser les aliments perso', e)
+        }
+      }
+
       isDataLoaded.current = true
     }
 
     loadData()
   }, [])
 
-  // ─── Sauvegarde automatique quand les repas changent ──────────────────
+  // ─── Sauvegarde automatique ────────────────────────────────────────────
   useEffect(() => {
-    // ✅ FIX CRITIQUE: Ne pas sauvegarder avant que les données soient chargées
-    // Cela évite d'écraser localStorage avec un objet vide {} au premier render
     if (!isDataLoaded.current) return
 
-    // Sauvegarder chaque jour séparément
     Object.entries(allDaysData).forEach(([date, dayMeals]) => {
       safeLocalStorageSet(`meals_${date}`, JSON.stringify(dayMeals))
     })
 
-    // Mettre à jour l'historique
     const newHistory: DayData[] = Object.entries(allDaysData)
       .map(([date, dayMeals]) => {
         const totals = calculateTotals(dayMeals)
@@ -241,7 +286,6 @@ export default function Home() {
     setHistoryData(newHistory)
     safeLocalStorageSet('weekHistory', JSON.stringify(newHistory))
 
-    // Nettoyage photos orphelines (en arrière-plan, sans bloquer)
     const validPhotoIds = Object.values(allDaysData).flat().filter(m => m.photoId).map(m => m.photoId!)
     dbManager.cleanupOrphanedPhotos(validPhotoIds).catch(console.error)
 
@@ -289,7 +333,6 @@ export default function Home() {
     })
   }, [])
 
-  // ─── Validation des données ────────────────────────────────────────────
   const isValidMeal = (meal: any): meal is Meal => {
     return (
       meal &&
@@ -322,7 +365,9 @@ export default function Home() {
       profile: profile,
       language: language,
       allDaysData: allDaysData,
-      historyData: historyData
+      historyData: historyData,
+      favorites: favorites,
+      customFoods: customFoods
     }
     const json = JSON.stringify(backup, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
@@ -345,13 +390,11 @@ export default function Home() {
         const raw = event.target?.result as string
         const backup = JSON.parse(raw)
 
-        // Validation de la structure du fichier
         if (!backup.version || !backup.exportDate) {
           alert(language === 'fr' ? '❌ Fichier invalide : ce n\'est pas un fichier CalCal.' : '❌ Invalid file: this is not a CalCal backup.')
           return
         }
 
-        // Valider et nettoyer les repas de chaque jour
         const cleanedDays: Record<string, Meal[]> = {}
         if (backup.allDaysData && typeof backup.allDaysData === 'object') {
           Object.entries(backup.allDaysData).forEach(([date, meals]) => {
@@ -360,7 +403,6 @@ export default function Home() {
           })
         }
 
-        // Valider le profil
         if (backup.profile && typeof backup.profile.age === 'number') {
           setProfile(backup.profile)
           safeLocalStorageSet('userProfile', JSON.stringify(backup.profile))
@@ -370,6 +412,16 @@ export default function Home() {
         if (backup.language) {
           setLanguage(backup.language)
           safeLocalStorageSet('language', backup.language)
+        }
+
+        if (backup.favorites && Array.isArray(backup.favorites)) {
+          setFavorites(backup.favorites)
+          safeLocalStorageSet('calcal_favorites', JSON.stringify(backup.favorites))
+        }
+
+        if (backup.customFoods && Array.isArray(backup.customFoods)) {
+          setCustomFoods(backup.customFoods)
+          safeLocalStorageSet('calcal_custom_foods', JSON.stringify(backup.customFoods))
         }
 
         setAllDaysData(cleanedDays)
@@ -387,7 +439,6 @@ export default function Home() {
       }
     }
     reader.readAsText(file)
-    // Reset input pour pouvoir réimporter le même fichier si besoin
     e.target.value = ''
   }
 
@@ -507,15 +558,17 @@ export default function Home() {
     setShowGuide(true)
   }
 
+  // ── filteredFoods : merge aliments standard + perso ────────────────────
   const filteredFoods = useMemo(() => {
-    return foodDatabase.filter(food => {
+    const allFoods: Food[] = [...foodDatabase, ...customFoods]
+    return allFoods.filter(food => {
       const matchesCategory = selectedCategory === 'all' || food.category === selectedCategory
       const matchesSearch = searchQuery === '' ||
         food.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         food.category.toLowerCase().includes(searchQuery.toLowerCase())
       return matchesCategory && matchesSearch
     })
-  }, [foodDatabase, selectedCategory, searchQuery])
+  }, [foodDatabase, customFoods, selectedCategory, searchQuery])
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -534,6 +587,92 @@ export default function Home() {
     accept: { 'image/*': [] },
     maxFiles: 1
   })
+
+  // ── Logique Favoris ────────────────────────────────────────────────────
+
+  const openFavoriteModal = (meal: Meal) => {
+    setMealToFavorite(meal)
+    setFavoriteName(meal.food.name)
+    setShowFavoriteModal(true)
+  }
+
+  const saveFavorite = () => {
+    if (!mealToFavorite || !favoriteName.trim()) return
+    const newFavorite: FavoriteMeal = {
+      id: Date.now().toString(),
+      name: favoriteName.trim(),
+      meals: [mealToFavorite],
+      savedAt: new Date().toISOString()
+    }
+    const updated = [...favorites, newFavorite]
+    setFavorites(updated)
+    safeLocalStorageSet('calcal_favorites', JSON.stringify(updated))
+    setShowFavoriteModal(false)
+    setMealToFavorite(null)
+    setFavoriteName('')
+  }
+
+  const deleteFavorite = (id: string) => {
+    const updated = favorites.filter(f => f.id !== id)
+    setFavorites(updated)
+    safeLocalStorageSet('calcal_favorites', JSON.stringify(updated))
+  }
+
+  const addFavoriteToJournal = (fav: FavoriteMeal) => {
+    if (!isToday) return
+    const currentMeals = allDaysData[today] || []
+    const newMeals = fav.meals.map(m => ({
+      ...m,
+      id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      quantity: favoriteQuantities[fav.id] ?? m.quantity,
+      time: new Date().toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
+    }))
+    setMealsForDate(today, [...currentMeals, ...newMeals])
+  }
+
+  const isMealFavorite = (mealId: string) => {
+    return favorites.some(f => f.meals.some(m => m.id === mealId))
+  }
+
+  // ── Logique Aliments Personnalisés ─────────────────────────────────────
+
+  const saveCustomFood = () => {
+    const { name, calories, protein, carbs, fat, category } = newCustomFood
+    if (!name.trim()) {
+      alert(language === 'fr' ? 'Le nom est obligatoire.' : 'Name is required.')
+      return
+    }
+    if (!calories || isNaN(Number(calories)) || Number(calories) < 0) {
+      alert(language === 'fr' ? 'Calories invalides.' : 'Invalid calories.')
+      return
+    }
+
+    const customFood: CustomFood = {
+      id: `custom_${Date.now()}`,
+      name: name.trim(),
+      calories: Number(calories),
+      protein: Number(protein) || 0,
+      carbs: Number(carbs) || 0,
+      fat: Number(fat) || 0,
+      category: category.trim() || (language === 'fr' ? 'Perso' : language === 'es' ? 'Personalizado' : 'Custom'),
+      isCustom: true,
+      createdAt: new Date().toISOString()
+    }
+
+    const updated = [...customFoods, customFood]
+    setCustomFoods(updated)
+    safeLocalStorageSet('calcal_custom_foods', JSON.stringify(updated))
+    setNewCustomFood({ name: '', calories: '', protein: '', carbs: '', fat: '', category: '' })
+    setShowCustomFoodForm(false)
+  }
+
+  const deleteCustomFood = (id: string) => {
+    const updated = customFoods.filter(f => f.id !== id)
+    setCustomFoods(updated)
+    safeLocalStorageSet('calcal_custom_foods', JSON.stringify(updated))
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50">
@@ -672,6 +811,60 @@ export default function Home() {
         </div>
       )}
 
+      {/* ── Modal Nommer un Favori ── */}
+      {showFavoriteModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="max-w-sm w-full border-2 border-yellow-300 shadow-2xl">
+            <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b-2 border-yellow-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-xl text-gray-900 flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                    {language === 'fr' ? 'Ajouter aux Favoris' : language === 'es' ? 'Añadir a Favoritos' : 'Add to Favorites'}
+                  </CardTitle>
+                  <CardDescription className="text-sm mt-1">
+                    {language === 'fr' ? 'Donnez un nom à ce repas favori' : language === 'es' ? 'Dale un nombre a este favorito' : 'Give a name to this favorite meal'}
+                  </CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setShowFavoriteModal(false)} className="hover:bg-yellow-100">
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              {mealToFavorite && (
+                <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200 text-sm text-gray-700">
+                  <span className="font-semibold">{mealToFavorite.food.name}</span>
+                  <span className="text-gray-500 ml-2">— {mealToFavorite.quantity}g · {Math.round(mealToFavorite.food.calories * mealToFavorite.quantity / 100)} kcal</span>
+                </div>
+              )}
+              <div>
+                <Label className="text-sm font-semibold">
+                  {language === 'fr' ? 'Nom du favori' : language === 'es' ? 'Nombre del favorito' : 'Favorite name'}
+                </Label>
+                <Input
+                  value={favoriteName}
+                  onChange={e => setFavoriteName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && saveFavorite()}
+                  className="mt-2 h-11 border-2 border-yellow-300 focus:border-yellow-500"
+                  placeholder={language === 'fr' ? 'Ex: Mon petit-déjeuner' : language === 'es' ? 'Ej: Mi desayuno' : 'E.g: My breakfast'}
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button onClick={saveFavorite} className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 h-11 font-semibold text-white shadow">
+                  <Star className="w-4 h-4 mr-2 fill-white" />
+                  {language === 'fr' ? 'Sauvegarder' : language === 'es' ? 'Guardar' : 'Save'}
+                </Button>
+                <Button onClick={() => setShowFavoriteModal(false)} variant="outline" className="border-2 h-11">
+                  {language === 'fr' ? 'Annuler' : language === 'es' ? 'Cancelar' : 'Cancel'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 py-6 max-w-7xl">
 
         {/* ── Modal Sauvegarde / Restauration ── */}
@@ -695,8 +888,6 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-5 pt-6">
-
-                {/* Export */}
                 <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
                   <div className="flex items-start gap-3">
                     <div className="bg-blue-500 p-2 rounded-lg">
@@ -708,10 +899,10 @@ export default function Home() {
                       </h3>
                       <p className="text-xs text-gray-600 mt-1 mb-3">
                         {language === 'fr'
-                          ? 'Télécharge un fichier .json avec tous tes repas, ton profil et ton historique. Garde-le en lieu sûr !'
+                          ? 'Télécharge un fichier .json avec tous tes repas, ton profil, tes favoris et aliments perso.'
                           : language === 'es'
-                          ? 'Descarga un archivo .json con todas tus comidas y perfil.'
-                          : 'Downloads a .json file with all your meals, profile and history. Keep it safe!'}
+                          ? 'Descarga un archivo .json con todas tus comidas, perfil, favoritos y alimentos personalizados.'
+                          : 'Downloads a .json file with all your meals, profile, favorites and custom foods. Keep it safe!'}
                       </p>
                       <Button onClick={exportData} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                         <Download className="w-4 h-4 mr-2" />
@@ -721,7 +912,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Import */}
                 <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border-2 border-orange-200">
                   <div className="flex items-start gap-3">
                     <div className="bg-orange-500 p-2 rounded-lg">
@@ -749,7 +939,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Info */}
                 <p className="text-xs text-center text-gray-500">
                   {language === 'fr'
                     ? '💡 Conseil : faites une sauvegarde régulièrement, par exemple chaque semaine.'
@@ -889,10 +1078,133 @@ export default function Home() {
         {isToday && (
           <Card className="border-2 border-indigo-300 shadow-xl bg-white mb-6">
             <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50">
-              <CardTitle className="text-2xl text-gray-800">{t.addFood}</CardTitle>
-              <CardDescription className="text-base">{t.selectCategory}</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl text-gray-800">{t.addFood}</CardTitle>
+                  <CardDescription className="text-base">{t.selectCategory}</CardDescription>
+                </div>
+                {/* ── Bouton Créer aliment perso ── */}
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCustomFoodForm(v => !v)}
+                  className="border-2 border-purple-300 hover:border-purple-500 hover:bg-purple-50 text-purple-700 font-semibold gap-2"
+                >
+                  <ChefHat className="w-4 h-4" />
+                  {language === 'fr' ? '+ Aliment perso' : language === 'es' ? '+ Alimento perso.' : '+ Custom food'}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
+
+              {/* ── Formulaire Aliment Personnalisé ── */}
+              {showCustomFoodForm && (
+                <div className="p-5 bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-xl border-2 border-purple-300 shadow-md space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-lg text-purple-800 flex items-center gap-2">
+                      <ChefHat className="w-5 h-5" />
+                      {language === 'fr' ? '🥗 Créer un aliment personnalisé' : language === 'es' ? '🥗 Crear alimento personalizado' : '🥗 Create a custom food'}
+                    </h3>
+                    <button onClick={() => setShowCustomFoodForm(false)} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Label className="text-sm font-semibold text-purple-700">
+                        {language === 'fr' ? 'Nom *' : language === 'es' ? 'Nombre *' : 'Name *'}
+                      </Label>
+                      <Input
+                        value={newCustomFood.name}
+                        onChange={e => setNewCustomFood(p => ({...p, name: e.target.value}))}
+                        className="mt-1 h-10 border-2 border-purple-200 focus:border-purple-500"
+                        placeholder={language === 'fr' ? 'Ex: Ma salade maison' : language === 'es' ? 'Ej: Mi ensalada' : 'E.g: My homemade salad'}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold text-purple-700">
+                        {language === 'fr' ? 'Catégorie' : language === 'es' ? 'Categoría' : 'Category'}
+                      </Label>
+                      <Input
+                        value={newCustomFood.category}
+                        onChange={e => setNewCustomFood(p => ({...p, category: e.target.value}))}
+                        className="mt-1 h-10 border-2 border-purple-200 focus:border-purple-500"
+                        placeholder={language === 'fr' ? 'Ex: Maison' : language === 'es' ? 'Ej: Casero' : 'E.g: Homemade'}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold text-purple-700">
+                        {language === 'fr' ? 'Calories (kcal/100g) *' : language === 'es' ? 'Calorías (kcal/100g) *' : 'Calories (kcal/100g) *'}
+                      </Label>
+                      <Input
+                        type="number" min="0"
+                        value={newCustomFood.calories}
+                        onChange={e => setNewCustomFood(p => ({...p, calories: e.target.value}))}
+                        className="mt-1 h-10 border-2 border-purple-200 focus:border-purple-500"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold text-purple-700">{t.protein} (g/100g)</Label>
+                      <Input
+                        type="number" min="0"
+                        value={newCustomFood.protein}
+                        onChange={e => setNewCustomFood(p => ({...p, protein: e.target.value}))}
+                        className="mt-1 h-10 border-2 border-purple-200 focus:border-purple-500"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold text-purple-700">{t.carbs} (g/100g)</Label>
+                      <Input
+                        type="number" min="0"
+                        value={newCustomFood.carbs}
+                        onChange={e => setNewCustomFood(p => ({...p, carbs: e.target.value}))}
+                        className="mt-1 h-10 border-2 border-purple-200 focus:border-purple-500"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold text-purple-700">{t.fat} (g/100g)</Label>
+                      <Input
+                        type="number" min="0"
+                        value={newCustomFood.fat}
+                        onChange={e => setNewCustomFood(p => ({...p, fat: e.target.value}))}
+                        className="mt-1 h-10 border-2 border-purple-200 focus:border-purple-500"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button onClick={saveCustomFood} className="flex-1 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 h-10 font-semibold shadow">
+                      <Plus className="w-4 h-4 mr-2" />
+                      {language === 'fr' ? 'Créer l\'aliment' : language === 'es' ? 'Crear alimento' : 'Create food'}
+                    </Button>
+                    <Button onClick={() => setShowCustomFoodForm(false)} variant="outline" className="border-2 h-10">
+                      {language === 'fr' ? 'Annuler' : language === 'es' ? 'Cancelar' : 'Cancel'}
+                    </Button>
+                  </div>
+                  {/* Liste des aliments perso existants */}
+                  {customFoods.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide">
+                        {language === 'fr' ? 'Mes aliments perso' : language === 'es' ? 'Mis alimentos' : 'My custom foods'} ({customFoods.length})
+                      </p>
+                      {customFoods.map(cf => (
+                        <div key={cf.id} className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-purple-200 text-sm">
+                          <span className="font-medium text-gray-800">{cf.name}</span>
+                          <div className="flex items-center gap-3 text-gray-500">
+                            <span>{cf.calories} kcal</span>
+                            <button onClick={() => deleteCustomFood(cf.id)} className="text-red-400 hover:text-red-600 transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-2 overflow-x-auto pb-3" style={{ scrollbarWidth: 'thin', scrollbarColor: '#818cf8 #e0e7ff' }}>
                 <Button variant={selectedCategory === 'all' ? 'default' : 'outline'} onClick={() => setSelectedCategory('all')} size="sm" className={selectedCategory === 'all' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-md' : 'border-2 hover:border-indigo-300'}>
                   {t.all}
@@ -902,6 +1214,17 @@ export default function Home() {
                     {cat}
                   </Button>
                 ))}
+                {/* Badge catégorie Perso si aliments perso existent */}
+                {customFoods.length > 0 && (
+                  <Button
+                    variant={selectedCategory === (language === 'fr' ? 'Perso' : language === 'es' ? 'Personalizado' : 'Custom') ? 'default' : 'outline'}
+                    onClick={() => setSelectedCategory(language === 'fr' ? 'Perso' : language === 'es' ? 'Personalizado' : 'Custom')}
+                    size="sm"
+                    className="whitespace-nowrap border-2 border-purple-300 hover:border-purple-500 text-purple-700 hover:bg-purple-50"
+                  >
+                    🥗 {language === 'fr' ? 'Perso' : language === 'es' ? 'Perso.' : 'Custom'}
+                  </Button>
+                )}
               </div>
 
               <Input
@@ -914,14 +1237,30 @@ export default function Home() {
               {!selectedFood && (
                 <div className="grid md:grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2">
                   {filteredFoods.map((food, index) => (
-                    <div key={index} onClick={() => setSelectedFood(food)} className="p-4 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md cursor-pointer transition-all">
+                    <div key={index} onClick={() => setSelectedFood(food)} className={`p-4 rounded-lg border-2 hover:shadow-md cursor-pointer transition-all ${
+                      (food as CustomFood).isCustom
+                        ? 'bg-gradient-to-br from-purple-50 to-fuchsia-50 border-purple-200 hover:border-purple-400'
+                        : 'bg-gradient-to-br from-white to-indigo-50 border-gray-200 hover:border-indigo-400'
+                    }`}>
                       <div className="flex gap-3 items-start">
-                        <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                          <FoodImage foodId={food.id || food.name.toLowerCase().replace(/[^a-z0-9]/g, '_')} foodName={food.name} foodCategory={food.category} className="w-full h-full" />
-                        </div>
+                        {!(food as CustomFood).isCustom && (
+                          <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                            <FoodImage foodId={food.id || food.name.toLowerCase().replace(/[^a-z0-9]/g, '_')} foodName={food.name} foodCategory={food.category} className="w-full h-full" />
+                          </div>
+                        )}
+                        {(food as CustomFood).isCustom && (
+                          <div className="w-16 h-16 flex-shrink-0 rounded-lg bg-gradient-to-br from-purple-200 to-fuchsia-200 flex items-center justify-center">
+                            <ChefHat className="w-7 h-7 text-purple-600" />
+                          </div>
+                        )}
                         <div className="flex-1">
                           <p className="font-semibold text-lg text-gray-900">{food.name}</p>
                           <p className="text-xs text-gray-500 mt-1">{food.category}</p>
+                          {(food as CustomFood).isCustom && (
+                            <p className="text-xs text-purple-600 mt-1 font-medium">
+                              {language === 'fr' ? '✨ Aliment perso' : language === 'es' ? '✨ Perso.' : '✨ Custom'}
+                            </p>
+                          )}
                           {food.unit && <p className="text-xs text-indigo-600 mt-1 font-medium">{food.unit}</p>}
                         </div>
                         <div className="text-right text-sm">
@@ -1045,6 +1384,7 @@ export default function Home() {
                 {meals.map((meal) => {
                   const multiplier = meal.quantity / 100
                   const photoUrl = meal.photoId ? loadedPhotos.get(meal.photoId) : undefined
+                  const alreadyFavorited = isMealFavorite(meal.id)
                   return (
                     <div key={meal.id} className="flex items-center gap-4 p-5 bg-gradient-to-br from-white to-indigo-50 rounded-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all">
                       {photoUrl && (
@@ -1062,8 +1402,24 @@ export default function Home() {
                           <span>L:{Math.round(meal.food.fat * multiplier)}{t.grams}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
                         <span className="text-2xl font-bold text-indigo-600">{Math.round(meal.food.calories * multiplier)} {t.kcal}</span>
+                        {/* ── Bouton Favori ── */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => alreadyFavorited ? undefined : openFavoriteModal(meal)}
+                          title={alreadyFavorited
+                            ? (language === 'fr' ? 'Déjà en favori' : language === 'es' ? 'Ya es favorito' : 'Already a favorite')
+                            : (language === 'fr' ? 'Ajouter aux favoris' : language === 'es' ? 'Añadir a favoritos' : 'Add to favorites')}
+                          className={`border-2 border-transparent transition-all ${
+                            alreadyFavorited
+                              ? 'text-yellow-500 cursor-default'
+                              : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 hover:border-yellow-200'
+                          }`}
+                        >
+                          <Star className={`w-5 h-5 ${alreadyFavorited ? 'fill-yellow-500' : ''}`} />
+                        </Button>
                         {isToday && (
                           <Button variant="ghost" size="icon" onClick={() => deleteMeal(meal.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 border-2 border-transparent hover:border-red-200">
                             <Trash2 className="w-5 h-5" />
@@ -1076,6 +1432,126 @@ export default function Home() {
               </div>
             )}
           </CardContent>
+        </Card>
+
+        {/* ── Section Mes Favoris ── */}
+        <Card className="border-2 border-yellow-300 shadow-xl bg-white mb-6">
+          <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl text-gray-800 flex items-center gap-2">
+                  <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
+                  {language === 'fr' ? 'Mes Favoris' : language === 'es' ? 'Mis Favoritos' : 'My Favorites'}
+                  {favorites.length > 0 && (
+                    <span className="ml-1 text-sm font-normal text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full">
+                      {favorites.length}
+                    </span>
+                  )}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {language === 'fr' ? 'Réutilisez vos repas favoris en un clic' : language === 'es' ? 'Reutiliza tus comidas favoritas con un clic' : 'Reuse your favorite meals in one click'}
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFavorites(v => !v)}
+                className="text-yellow-600 hover:bg-yellow-100 font-semibold"
+              >
+                {showFavorites
+                  ? (language === 'fr' ? 'Masquer' : language === 'es' ? 'Ocultar' : 'Hide')
+                  : (language === 'fr' ? 'Afficher' : language === 'es' ? 'Mostrar' : 'Show')}
+              </Button>
+            </div>
+          </CardHeader>
+
+          {showFavorites && (
+            <CardContent className="pt-5">
+              {favorites.length === 0 ? (
+                <div className="text-center py-10 text-gray-400">
+                  <Star className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-base font-medium">
+                    {language === 'fr' ? 'Aucun favori pour l\'instant' : language === 'es' ? 'Sin favoritos por ahora' : 'No favorites yet'}
+                  </p>
+                  <p className="text-sm mt-1">
+                    {language === 'fr' ? 'Cliquez sur ⭐ sur un repas pour l\'ajouter ici' : language === 'es' ? 'Haz clic en ⭐ en una comida para añadirla' : 'Click ⭐ on any meal to save it here'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {favorites.map(fav => {
+                    const favTotals = calculateTotals(fav.meals)
+                    const currentQty = favoriteQuantities[fav.id] ?? fav.meals[0]?.quantity ?? 100
+                    return (
+                      <div key={fav.id} className="p-4 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl border-2 border-yellow-200 hover:border-yellow-400 hover:shadow-md transition-all">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+                              <h4 className="font-bold text-gray-900">{fav.name}</h4>
+                            </div>
+                            <p className="text-xs text-gray-500 mb-2">
+                              {fav.meals.map(m => m.food.name).join(', ')}
+                            </p>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <span className="text-sm font-semibold text-indigo-600">
+                                {Math.round(favTotals.calories * (currentQty / (fav.meals[0]?.quantity || 100)))} kcal
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                P:{Math.round(favTotals.protein * (currentQty / (fav.meals[0]?.quantity || 100)))}g
+                                · C:{Math.round(favTotals.carbs * (currentQty / (fav.meals[0]?.quantity || 100)))}g
+                                · L:{Math.round(favTotals.fat * (currentQty / (fav.meals[0]?.quantity || 100)))}g
+                              </span>
+                            </div>
+                            {/* Sélecteur de quantité */}
+                            <div className="flex items-center gap-2 mt-3">
+                              <span className="text-xs font-semibold text-gray-600">
+                                {language === 'fr' ? 'Quantité :' : language === 'es' ? 'Cantidad:' : 'Quantity:'}
+                              </span>
+                              <button
+                                onClick={() => setFavoriteQuantities(prev => ({...prev, [fav.id]: Math.max(1, (prev[fav.id] ?? fav.meals[0]?.quantity ?? 100) - 10)}))}
+                                className="w-7 h-7 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-white font-bold flex items-center justify-center text-sm"
+                              >−</button>
+                              <input
+                                type="number"
+                                value={currentQty}
+                                onChange={e => setFavoriteQuantities(prev => ({...prev, [fav.id]: Math.max(1, Number(e.target.value))}))}
+                                className="w-16 h-7 text-center text-sm font-bold border-2 border-yellow-300 rounded-lg focus:border-yellow-500 outline-none"
+                              />
+                              <button
+                                onClick={() => setFavoriteQuantities(prev => ({...prev, [fav.id]: (prev[fav.id] ?? fav.meals[0]?.quantity ?? 100) + 10}))}
+                                className="w-7 h-7 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-white font-bold flex items-center justify-center text-sm"
+                              >+</button>
+                              <span className="text-xs text-gray-500">{t.grams}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {isToday && (
+                              <Button
+                                onClick={() => addFavoriteToJournal(fav)}
+                                className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white font-semibold shadow text-sm h-9 px-3"
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                {language === 'fr' ? 'Ajouter' : language === 'es' ? 'Añadir' : 'Add'}
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteFavorite(fav.id)}
+                              className="text-red-400 hover:text-red-600 hover:bg-red-50 border-2 border-transparent hover:border-red-200 h-9 w-9"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </CardContent>
+          )}
         </Card>
 
         <div className="mt-8 text-center text-gray-500 text-sm pb-6">
