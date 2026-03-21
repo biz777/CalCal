@@ -558,7 +558,7 @@ export default function Home() {
     }
     setHasProfile(true)
     setShowProfile(false)
-    setTimeout(() => { setShowGuide(true) }, 100)
+    if (!hasProfile) { setTimeout(() => { setShowGuide(true) }, 100) }
   }
 
   // ── filteredFoods : merge aliments standard + perso ────────────────────
