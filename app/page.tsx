@@ -184,7 +184,7 @@ export default function Home() {
       if (savedProfile) {
         try {
           setProfile(JSON.parse(savedProfile))
-          if (!hasSeenGuide) setShowGuide(true)
+          if (!hasSeenGuide) setShowGuide(true); else setShowProfile(false)
         } catch (e) {
           console.error('❌ Impossible de parser le profil sauvegardé', e)
           setShowProfile(true)
@@ -545,21 +545,14 @@ export default function Home() {
       }
     }
     setMealsForDate(today, (allDaysData[today] || []).filter(m => m.id !== id))
-  }
-
-  const saveProfile = () => {
+ const saveProfile = () => {
     if (!profile.age || isNaN(profile.age) || profile.age < 1 || profile.age > 150) { alert('Please enter a valid age between 1 and 150'); return }
     if (profile.weight < 20 || profile.weight > 500) { alert('Please enter a valid weight between 20 and 500 kg'); return }
     if (profile.height < 50 || profile.height > 300) { alert('Please enter a valid height between 50 and 300 cm'); return }
-    const saved = safeLocalStorageSet('userProfile', JSON.stringify(profile))
-  
-    setHasProfile(true)
+    safeLocalStorageSet('userProfile', JSON.stringify(profile))
+    safeLocalStorageSet('hasSeenGuide', 'true')
     setShowProfile(false)
-    if (!hasProfile) { setTimeout(() => { setShowGuide(true) }, 100) }
   }
-
-  // ── filteredFoods : merge aliments standard + perso ────────────────────
-  const filteredFoods = useMemo(() => {
     const allFoods: Food[] = [...foodDatabase, ...customFoods]
     return allFoods.filter(food => {
       const matchesCategory = selectedCategory === 'all' || food.category === selectedCategory
