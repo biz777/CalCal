@@ -548,14 +548,11 @@ export default function Home() {
   }
 
   const saveProfile = () => {
-    if (profile.age < 1 || profile.age > 150) { alert('Please enter a valid age between 1 and 150'); return }
+    if (!profile.age || isNaN(profile.age) || profile.age < 1 || profile.age > 150) { alert('Please enter a valid age between 1 and 150'); return }
     if (profile.weight < 20 || profile.weight > 500) { alert('Please enter a valid weight between 20 and 500 kg'); return }
     if (profile.height < 50 || profile.height > 300) { alert('Please enter a valid height between 50 and 300 cm'); return }
     const saved = safeLocalStorageSet('userProfile', JSON.stringify(profile))
-    if (!saved) {
-      alert('Échec de la sauvegarde du profil. Stockage insuffisant.')
-      return
-    }
+  
     setHasProfile(true)
     setShowProfile(false)
     if (!hasProfile) { setTimeout(() => { setShowGuide(true) }, 100) }
